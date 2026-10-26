@@ -15,26 +15,35 @@ const GAME_ICONS: Record<string, string> = { kostky: '🎲', zolik: '🃏' }
 export function GamesPage() {
   const navigate = useNavigate()
   const { names, reload: reloadPlayers } = usePlayers()
-  const [gameTypes, setGameTypes] = useState<GameType[]>([])
+  const [gameTypes, setGameTypes] = useState<GameType[] | null>(null)
   const [gameTypeId, setGameTypeId] = useState(DEFAULT_GAME_TYPE)
   const [active, setActive] = useState<SessionWithPlayers[] | null>(null)
   const [recent, setRecent] = useState<SessionWithPlayers[]>([])
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
+  // Game types load independently, so a failing session list never blocks „Nová hra“.
+  useEffect(() => {
+    getGameTypes()
+      .then(setGameTypes)
+      .catch((e) => {
+        setGameTypes([])
+        setError(errorMessage(e))
+      })
+  }, [])
+
   const load = useCallback(async () => {
+    // Closing idle sessions is best effort; the lists load either way.
+    await closeStaleSessions().catch(() => {})
     try {
-      await closeStaleSessions()
-      const [types, activeSessions, endedSessions] = await Promise.all([
-        getGameTypes(),
+      const [activeSessions, endedSessions] = await Promise.all([
         listSessions({ gameTypeId, status: 'active' }),
         listSessions({ gameTypeId, status: 'ended', limit: RECENT_LIMIT }),
       ])
-      setGameTypes(types)
       setActive(activeSessions)
       setRecent(endedSessions)
-      setError(null)
     } catch (e) {
+      setActive([])
       setError(errorMessage(e))
     }
   }, [gameTypeId])
@@ -43,7 +52,7 @@ export function GamesPage() {
     load()
   }, [load])
 
-  const gameType = gameTypes.find((g) => g.id === gameTypeId)
+  const gameType = gameTypes?.find((g) => g.id === gameTypeId)
   const playerNames = (s: SessionWithPlayers) => joinNames(s.players.map((p) => names.get(p.player_id) ?? '?'))
   const winnerNames = (s: SessionWithPlayers) =>
     s.winner_player_ids?.length ? joinNames(s.winner_player_ids.map((id) => names.get(id) ?? '?')) : '–'
@@ -51,7 +60,7 @@ export function GamesPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-        {gameTypes.map((g) => {
+        {gameTypes?.map((g) => {
           const available = Boolean(gameModules[g.id])
           const selected = g.id === gameTypeId
           return (
@@ -79,6 +88,11 @@ export function GamesPage() {
       </div>
 
       <ErrorText>{error}</ErrorText>
+      {gameTypes !== null && !gameType && (
+        <ErrorText>
+          V databázi chybí typy her. Spusť v Supabase (SQL Editor) soubor supabase/seed.sql a obnov stránku.
+        </ErrorText>
+      )}
 
       <Button size="lg" className="w-full sm:w-auto" disabled={!gameType} onClick={() => setDialogOpen(true)}>
         + Nová hra
