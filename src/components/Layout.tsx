@@ -2,16 +2,18 @@ import { NavLink, Outlet } from 'react-router'
 import { signOut } from '../lib/auth'
 import { useAuth } from '../lib/AuthProvider'
 
+// Links with an icon show only the icon on narrow screens (the label stays for screen readers).
 const links = [
   { to: '/', label: 'Hry', end: true },
   { to: '/celkove', label: 'Celkové statistiky', end: false },
+  { to: '/nastaveni', label: 'Nastavení', end: false, icon: '⚙️' },
 ]
 
 export function Layout() {
   const { profile } = useAuth()
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-stone-200 bg-surface/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-1 px-3 py-2 sm:gap-2 sm:px-6">
           <span className="mr-1 hidden text-xl sm:inline" aria-hidden>
             🎲
@@ -24,11 +26,18 @@ export function Layout() {
                 end={l.end}
                 className={({ isActive }) =>
                   `whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold sm:px-3 sm:text-base ${
-                    isActive ? 'bg-brand-50 text-brand-700' : 'text-stone-600 hover:bg-stone-100'
+                    isActive ? 'bg-brand-50 text-accent' : 'text-stone-600 hover:bg-stone-100'
                   }`
                 }
               >
-                {l.label}
+                {l.icon ? (
+                  <>
+                    <span aria-hidden>{l.icon}</span>
+                    <span className="sr-only sm:not-sr-only sm:ml-1.5">{l.label}</span>
+                  </>
+                ) : (
+                  l.label
+                )}
               </NavLink>
             ))}
           </nav>

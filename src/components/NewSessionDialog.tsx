@@ -68,14 +68,14 @@ export function NewSessionDialog({
             {selected.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center gap-1 rounded-full bg-brand-50 py-1 pl-3 pr-1 font-medium text-brand-800 ring-1 ring-brand-100"
+                className="flex items-center gap-1 rounded-full bg-brand-50 py-1 pl-3 pr-1 font-medium text-accent ring-1 ring-brand-100"
               >
                 {p.display_name}
-                {p.user_id === null && <span className="text-xs text-brand-600">(host)</span>}
+                {p.user_id === null && <span className="text-xs text-accent">(host)</span>}
                 {p.id !== me?.id ? (
                   <button
                     type="button"
-                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-brand-700 hover:bg-brand-100"
+                    className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-accent hover:bg-brand-100"
                     onClick={() => setSelected((prev) => prev.filter((x) => x.id !== p.id))}
                     aria-label={`Odebrat ${p.display_name}`}
                   >
@@ -122,7 +122,7 @@ export function NewSessionDialog({
 }
 
 const fieldClass =
-  'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
+  'w-full rounded-xl border border-stone-300 bg-surface px-3 py-2.5 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
 
 function UserSearch({ onPick, isSelected }: { onPick: (p: Player) => void; isSelected: (id: string) => boolean }) {
   const [query, setQuery] = useState('')
@@ -174,7 +174,7 @@ function UserSearch({ onPick, isSelected }: { onPick: (p: Player) => void; isSel
           spellCheck={false}
         />
         {query.trim() && (
-          <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-stone-200">
+          <ul className="absolute inset-x-0 top-full z-10 mt-1 overflow-hidden rounded-xl bg-surface shadow-lg ring-1 ring-stone-200">
             {visibleResults.length === 0 ? (
               <li className="px-3 py-2 text-sm text-stone-500">Nikdo takový</li>
             ) : (

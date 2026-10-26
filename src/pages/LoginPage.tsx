@@ -21,7 +21,7 @@ export function LoginPage() {
   }
 
   const inputClass =
-    'w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-lg outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
+    'w-full rounded-xl border border-stone-300 bg-surface px-4 py-3 text-lg outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
 
   return (
     <div className="flex min-h-dvh items-start justify-center px-4 pt-[12vh]">
@@ -32,7 +32,7 @@ export function LoginPage() {
           </div>
           <h1 className="mt-2 text-2xl font-bold">Hry – skóre</h1>
         </div>
-        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-stone-200">
+        <div className="rounded-3xl bg-surface p-5 shadow-sm ring-1 ring-stone-200">
           <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1" role="tablist">
             {(
               [
@@ -49,7 +49,7 @@ export function LoginPage() {
                   setTab(value)
                   setError(null)
                 }}
-                className={`rounded-lg py-2 font-semibold ${tab === value ? 'bg-white shadow-sm' : 'text-stone-500'}`}
+                className={`rounded-lg py-2 font-semibold ${tab === value ? 'bg-surface shadow-sm' : 'text-stone-500'}`}
               >
                 {label}
               </button>

@@ -24,7 +24,8 @@ import { liveStats, nextTurn, orderForRound, parseThrow, type DrawOrder } from '
 import { Scoreboard } from './Scoreboard'
 
 // Charts are heavy; the entry panel renders first, the statistics follow.
-const KostkyStatsView = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkyStatsView })))
+const KostkySummary = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkySummary })))
+const KostkyCharts = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkyCharts })))
 
 const DEFAULT_MAX_WARNING = 10000
 const TEMP_ID = 'pending'
@@ -183,17 +184,17 @@ export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionSc
   const keepFocus = (e: MouseEvent) => e.preventDefault()
 
   const entryPanel = (
-    <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-6">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h1 className="min-w-0 truncate text-2xl font-extrabold sm:text-4xl">
-          Na řadě: <span className="text-brand-700">{current.name}</span>
+    <div className="rounded-3xl bg-surface p-4 shadow-sm ring-1 ring-stone-200 sm:p-5">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h1 className="min-w-0 truncate text-2xl font-extrabold sm:text-3xl">
+          Na řadě: <span className="text-accent">{current.name}</span>
         </h1>
         <span className="shrink-0 rounded-full bg-stone-100 px-3 py-1 text-sm font-bold text-stone-600 sm:text-base">
           Kolo {turn.roundNo}
         </span>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {roundOrder.map((id) => (
           <span
             key={id}
@@ -224,7 +225,7 @@ export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionSc
           autoFocus
           aria-label={`Hod hráče ${current.name}`}
           placeholder="0"
-          className="tabular w-full rounded-2xl border-2 border-stone-300 bg-stone-50 px-4 py-4 text-center text-5xl font-bold outline-none placeholder:text-stone-300 focus:border-brand-500 focus:bg-white sm:text-6xl"
+          className="tabular w-full rounded-2xl border-2 border-stone-300 bg-stone-50 px-4 py-3 text-center text-5xl font-bold outline-none placeholder:text-stone-300 focus:border-brand-500 focus:bg-surface"
         />
         <ErrorText>{error}</ErrorText>
         <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -246,21 +247,41 @@ export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionSc
     </div>
   )
 
+  const stats = useGameStats(detail, entries, draws)
+  const side = (
+    <div className="space-y-4">
+      <LiveStats players={players} entries={entries} />
+      {stats.data && (
+        <Suspense fallback={null}>
+          <KostkySummary data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
+        </Suspense>
+      )}
+    </div>
+  )
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {isDesktop ? (
-        <div className="grid grid-cols-[minmax(0,5fr)_minmax(0,6fr)] items-start gap-6">
+        <div className="grid grid-cols-[minmax(0,5fr)_minmax(0,6fr)] items-start gap-4">
           {entryPanel}
-          <LiveStats players={players} entries={entries} />
+          {side}
         </div>
       ) : (
-        <div className="space-y-4">
+        <>
           {entryPanel}
-          <LiveStats players={players} entries={entries} />
-        </div>
+          {side}
+        </>
       )}
 
-      <GameStats detail={detail} entries={entries} draws={draws} />
+      {stats.failed ? (
+        <ErrorText>Statistiky se nepodařilo načíst.</ErrorText>
+      ) : !stats.data ? (
+        <Spinner />
+      ) : (
+        <Suspense fallback={<Spinner />}>
+          <KostkyCharts data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
+        </Suspense>
+      )}
 
       <section>
         <SectionTitle>Tabulka hodů</SectionTitle>
@@ -310,8 +331,8 @@ function DrawAnimation({ order, players, onDone }: { order: string[]; players: S
   return <DrawOverlay names={sorted.map((p) => p.name)} starterIndex={starterIndex} onDone={onDone} />
 }
 
-/** Statistics of this game's players (all their games together), updated live with every throw. */
-function GameStats({ detail, entries, draws }: { detail: SessionScreenProps['detail']; entries: ScoredEntry[]; draws: Draw[] }) {
+/** Statistics data of this game's players (all their games together), updated live with every throw. */
+function useGameStats(detail: SessionScreenProps['detail'], entries: ScoredEntry[], draws: Draw[]) {
   const sessionId = detail.session.id
   const [others, setOthers] = useState<StatsData | null>(null)
   const [failed, setFailed] = useState(false)
@@ -350,20 +371,7 @@ function GameStats({ detail, entries, draws }: { detail: SessionScreenProps['det
     [detail.players],
   )
 
-  return (
-    <section>
-      <SectionTitle>Statistiky</SectionTitle>
-      {failed ? (
-        <ErrorText>Statistiky se nepodařilo načíst.</ErrorText>
-      ) : !data ? (
-        <Spinner />
-      ) : (
-        <Suspense fallback={<Spinner />}>
-          <KostkyStatsView data={data} playerIds={playerIds} names={names} mode="group" />
-        </Suspense>
-      )}
-    </section>
-  )
+  return { data, failed, names, playerIds }
 }
 
 /** Totals over the whole game, plus the evening in progress. */
@@ -373,7 +381,7 @@ function LiveStats({ players, entries }: { players: SessionPlayer[]; entries: Sc
   const evening = liveStats(ids, currentEvening(entries))
   const avg = (v: number | null) => (v === null ? '–' : formatNumber(v, 0))
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-stone-200">
+    <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-stone-200">
       <table className="tabular w-full text-right text-sm">
         <thead className="text-xs uppercase text-stone-500">
           <tr>

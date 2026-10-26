@@ -61,7 +61,7 @@ export function GamesPage() {
                 selected
                   ? 'bg-brand-600 text-white shadow-md ring-brand-700'
                   : available
-                    ? 'bg-white ring-stone-200 hover:ring-brand-500'
+                    ? 'bg-surface ring-stone-200 hover:ring-brand-500'
                     : 'cursor-not-allowed bg-stone-50 text-stone-400 ring-stone-200'
               }`}
             >

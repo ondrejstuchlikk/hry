@@ -1,17 +1,148 @@
 @import 'tailwindcss';
 
+/* Dark mode follows the .dark class on <html> (set from Nastavení, see src/lib/theme.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Theming works through variables, so components keep plain classes:
+ * - brand-*  = the accent color chosen in Nastavení (data-accent on <html>)
+ * - surface  = cards and panels, canvas = page background, accent = accent-colored text
+ * - in dark mode the stone scale (and the few amber/red tints) are remapped below.
+ */
 @theme {
-  --color-brand-50: #f0fdfa;
-  --color-brand-100: #ccfbf1;
-  --color-brand-500: #14b8a6;
-  --color-brand-600: #0d9488;
-  --color-brand-700: #0f766e;
-  --color-brand-800: #115e59;
+  --color-brand-50: var(--accent-50);
+  --color-brand-100: var(--accent-100);
+  --color-brand-300: var(--accent-300);
+  --color-brand-400: var(--accent-400);
+  --color-brand-500: var(--accent-500);
+  --color-brand-600: var(--accent-600);
+  --color-brand-700: var(--accent-700);
+  --color-brand-800: var(--accent-800);
+  --color-brand-900: var(--accent-900);
+  --color-brand-950: var(--accent-950);
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-accent: var(--accent-text);
+}
+
+:root {
+  --surface: #ffffff;
+  --canvas: oklch(97% 0.001 106.424);
+  --accent-text: var(--accent-700);
+
+  /* Teal (default) */
+  --accent-50: oklch(98.4% 0.014 180.72);
+  --accent-100: oklch(95.3% 0.051 180.801);
+  --accent-300: oklch(85.5% 0.138 181.071);
+  --accent-400: oklch(77.7% 0.152 181.912);
+  --accent-500: oklch(70.4% 0.14 182.503);
+  --accent-600: oklch(60% 0.118 184.704);
+  --accent-700: oklch(51.1% 0.096 186.391);
+  --accent-800: oklch(43.7% 0.078 188.216);
+  --accent-900: oklch(38.6% 0.063 188.416);
+  --accent-950: oklch(27.7% 0.046 192.524);
+}
+
+:root[data-accent='blue'] {
+  --accent-50: oklch(97% 0.014 254.604);
+  --accent-100: oklch(93.2% 0.032 255.585);
+  --accent-300: oklch(80.9% 0.105 251.813);
+  --accent-400: oklch(70.7% 0.165 254.624);
+  --accent-500: oklch(62.3% 0.214 259.815);
+  --accent-600: oklch(54.6% 0.245 262.881);
+  --accent-700: oklch(48.8% 0.243 264.376);
+  --accent-800: oklch(42.4% 0.199 265.638);
+  --accent-900: oklch(37.9% 0.146 265.522);
+  --accent-950: oklch(28.2% 0.091 267.935);
+}
+
+:root[data-accent='violet'] {
+  --accent-50: oklch(96.9% 0.016 293.756);
+  --accent-100: oklch(94.3% 0.029 294.588);
+  --accent-300: oklch(81.1% 0.111 293.571);
+  --accent-400: oklch(70.2% 0.183 293.541);
+  --accent-500: oklch(60.6% 0.25 292.717);
+  --accent-600: oklch(54.1% 0.281 293.009);
+  --accent-700: oklch(49.1% 0.27 292.581);
+  --accent-800: oklch(43.2% 0.232 292.759);
+  --accent-900: oklch(38% 0.189 293.745);
+  --accent-950: oklch(28.3% 0.141 291.089);
+}
+
+:root[data-accent='rose'] {
+  --accent-50: oklch(96.9% 0.015 12.422);
+  --accent-100: oklch(94.1% 0.03 12.58);
+  --accent-300: oklch(81% 0.117 11.638);
+  --accent-400: oklch(71.2% 0.194 13.428);
+  --accent-500: oklch(64.5% 0.246 16.439);
+  --accent-600: oklch(58.6% 0.253 17.585);
+  --accent-700: oklch(51.4% 0.222 16.935);
+  --accent-800: oklch(45.5% 0.188 13.697);
+  --accent-900: oklch(41% 0.159 10.272);
+  --accent-950: oklch(27.1% 0.105 12.094);
+}
+
+:root[data-accent='orange'] {
+  --accent-50: oklch(98% 0.016 73.684);
+  --accent-100: oklch(95.4% 0.038 75.164);
+  --accent-300: oklch(83.7% 0.128 66.29);
+  --accent-400: oklch(75% 0.183 55.934);
+  --accent-500: oklch(70.5% 0.213 47.604);
+  --accent-600: oklch(64.6% 0.222 41.116);
+  --accent-700: oklch(55.3% 0.195 38.402);
+  --accent-800: oklch(47% 0.157 37.304);
+  --accent-900: oklch(40.8% 0.123 38.172);
+  --accent-950: oklch(26.6% 0.079 36.259);
+}
+
+:root[data-accent='emerald'] {
+  --accent-50: oklch(97.9% 0.021 166.113);
+  --accent-100: oklch(95% 0.052 163.051);
+  --accent-300: oklch(84.5% 0.143 164.978);
+  --accent-400: oklch(76.5% 0.177 163.223);
+  --accent-500: oklch(69.6% 0.17 162.48);
+  --accent-600: oklch(59.6% 0.145 163.225);
+  --accent-700: oklch(50.8% 0.118 165.612);
+  --accent-800: oklch(43.2% 0.095 166.913);
+  --accent-900: oklch(37.8% 0.077 168.94);
+  --accent-950: oklch(26.2% 0.051 172.552);
+}
+
+/* Dark theme: low stone steps become dark surfaces, high steps become light text. */
+.dark {
+  color-scheme: dark;
+  --surface: oklch(22.5% 0.005 60);
+  --canvas: oklch(16% 0.004 50);
+  --accent-text: var(--accent-300);
+
+  --color-stone-50: oklch(25.5% 0.006 60);
+  --color-stone-100: oklch(28% 0.006 60);
+  --color-stone-200: oklch(32% 0.007 60);
+  --color-stone-300: oklch(40% 0.008 60);
+  --color-stone-400: oklch(55% 0.01 60);
+  --color-stone-500: oklch(68% 0.01 60);
+  --color-stone-600: oklch(76% 0.008 60);
+  --color-stone-700: oklch(84% 0.006 60);
+  --color-stone-800: oklch(91% 0.004 60);
+  --color-stone-900: oklch(95% 0.002 60);
+  --color-stone-950: oklch(98% 0.001 60);
+
+  --color-brand-50: color-mix(in oklab, var(--accent-950) 70%, var(--surface));
+  --color-brand-100: var(--accent-900);
+
+  --color-amber-50: oklch(30% 0.06 60);
+  --color-amber-700: oklch(82.8% 0.189 84.429);
+  --color-amber-800: oklch(87.9% 0.169 91.605);
+
+  --color-red-50: oklch(28% 0.08 25);
+  --color-red-100: oklch(33% 0.1 25);
+  --color-red-300: oklch(45% 0.15 25);
+  --color-red-700: oklch(80.8% 0.114 19.571);
 }
 
 html,
 body {
-  @apply bg-stone-100 text-stone-900 antialiased;
+  @apply bg-canvas text-stone-900 antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -24,4 +155,10 @@ input[type='number']::-webkit-outer-spin-button {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Recharts: no focus outline box around the whole chart on click. */
+.recharts-wrapper,
+.recharts-surface {
+  outline: none;
 }

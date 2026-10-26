@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from './lib/supabase'
 import { GamesPage } from './pages/GamesPage'
 import { LoginPage } from './pages/LoginPage'
 import { SessionPage } from './pages/SessionPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { SetupPage } from './pages/SetupPage'
 
 // The statistics page pulls in the charting library; load it on demand.
@@ -29,6 +30,7 @@ function AppRoutes() {
             </Suspense>
           }
         />
+        <Route path="nastaveni" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

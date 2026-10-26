@@ -4,7 +4,7 @@ import { getGameTypes } from '../lib/api'
 import type { GameType } from '../lib/types'
 
 export const selectClass =
-  'w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 font-medium outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
+  'w-full rounded-xl border border-stone-300 bg-surface px-3 py-2.5 font-medium outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100'
 
 export function GameTypeSelect({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   const [types, setTypes] = useState<GameType[]>([])

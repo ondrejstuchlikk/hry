@@ -31,7 +31,7 @@ export function SessionPage() {
   if (detail === null) {
     return (
       <EmptyState>
-        Hra nenalezena. <Link to="/" className="text-brand-700 underline">Zpět na hry</Link>
+        Hra nenalezena. <Link to="/" className="text-accent underline">Zpět na hry</Link>
       </EmptyState>
     )
   }

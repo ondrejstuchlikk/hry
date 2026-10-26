@@ -16,7 +16,7 @@ export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps
   const n = (v: number | null) => (v === null ? '–' : formatNumber(v))
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-stone-200">
+    <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-stone-200">
       <table className="tabular w-full whitespace-nowrap text-right text-sm">
         <thead className="bg-stone-50 text-xs uppercase text-stone-500">
           <tr>
@@ -35,7 +35,7 @@ export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps
         <tbody>
           {rows.map((s) => (
             <tr key={s.playerId} className="border-t border-stone-100">
-              <td className="sticky left-0 bg-white px-3 py-2 text-left font-semibold">{names.get(s.playerId) ?? '?'}</td>
+              <td className="sticky left-0 bg-surface px-3 py-2 text-left font-semibold">{names.get(s.playerId) ?? '?'}</td>
               <td className="px-3 py-2">{s.sessionsPlayed}</td>
               <td className="px-3 py-2 font-semibold">{s.wins}</td>
               <td className="px-3 py-2">{s.ties}</td>

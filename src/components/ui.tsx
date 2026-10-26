@@ -5,8 +5,8 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
 const variants: Record<Variant, string> = {
   primary: 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 disabled:bg-stone-300',
   secondary:
-    'bg-white text-stone-800 ring-1 ring-stone-300 hover:bg-stone-50 active:bg-stone-100 disabled:text-stone-400',
-  danger: 'bg-white text-red-700 ring-1 ring-red-300 hover:bg-red-50 active:bg-red-100 disabled:text-stone-400',
+    'bg-surface text-stone-800 ring-1 ring-stone-300 hover:bg-stone-50 active:bg-stone-100 disabled:text-stone-400',
+  danger: 'bg-surface text-red-700 ring-1 ring-red-300 hover:bg-red-50 active:bg-red-100 disabled:text-stone-400',
   ghost: 'text-stone-700 hover:bg-stone-200/60 active:bg-stone-200 disabled:text-stone-400',
 }
 
@@ -27,7 +27,7 @@ export function Button({
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-200 sm:p-5 ${className}`}>{children}</div>
+  return <div className={`rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-stone-200 sm:p-5 ${className}`}>{children}</div>
 }
 
 export function SectionTitle({ children, className = '' }: { children: ReactNode; className?: string }) {

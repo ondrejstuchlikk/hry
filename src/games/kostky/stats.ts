@@ -340,3 +340,48 @@ export function allPlayerIds(data: StatsData): string[] {
   for (const s of data.sessions) for (const p of s.players) counts.set(p.player_id, (counts.get(p.player_id) ?? 0) + 1)
   return [...counts].sort((a, b) => b[1] - a[1]).map(([id]) => id)
 }
+
+// ---------------------------------------------------------------------------
+// All-time progress by round
+// ---------------------------------------------------------------------------
+
+export interface ProgressRow extends SeriesRow {
+  /** 1-based round index over all loaded sessions (chronological). */
+  round: number
+  date: string
+}
+
+/**
+ * One row per round (chronological, across sessions): cumulative points per player (`<id>`),
+ * their average over the last `formWindow` throws (`<id>_form`), and — for two players — the
+ * lead of the first over the second (`lead`). Expects raw data (entries ordered by seq).
+ */
+export function progressByRound(data: StatsData, playerIds: string[], formWindow = 20): ProgressRow[] {
+  const totals = new Map(playerIds.map((id) => [id, 0]))
+  const recent = new Map<string, number[]>(playerIds.map((id) => [id, []]))
+  const rows: ProgressRow[] = []
+  let currentKey = ''
+  let row: ProgressRow | null = null
+
+  for (const e of data.entries) {
+    if (!totals.has(e.player_id)) continue
+    const key = `${e.session_id}:${e.round_no}`
+    if (key !== currentKey) {
+      currentKey = key
+      row = { key, label: String(rows.length + 1), round: rows.length + 1, date: e.created_at }
+      rows.push(row)
+    }
+    totals.set(e.player_id, totals.get(e.player_id)! + e.value)
+    const last = recent.get(e.player_id)!
+    last.push(e.value)
+    if (last.length > formWindow) last.shift()
+    // Every row carries the running state of all players.
+    for (const id of playerIds) {
+      row![id] = totals.get(id)!
+      const values = recent.get(id)!
+      row![`${id}_form`] = values.length ? values.reduce((a, b) => a + b, 0) / values.length : null
+    }
+    if (playerIds.length === 2) row!.lead = totals.get(playerIds[0])! - totals.get(playerIds[1])!
+  }
+  return rows
+}

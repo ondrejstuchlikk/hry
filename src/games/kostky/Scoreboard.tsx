@@ -41,7 +41,7 @@ export function Scoreboard({
   }
 
   return (
-    <div ref={scrollRef} className="max-h-[70dvh] overflow-auto rounded-2xl bg-white ring-1 ring-stone-200">
+    <div ref={scrollRef} className="max-h-[70dvh] overflow-auto rounded-2xl bg-surface ring-1 ring-stone-200">
       <table className="tabular w-full border-separate border-spacing-0 text-right">
         <thead className="sticky top-0 z-10 bg-stone-50">
           <tr>

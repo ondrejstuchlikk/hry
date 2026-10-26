@@ -11,6 +11,7 @@ import {
   longestRun,
   median,
   playerSummary,
+  progressByRound,
   starterAdvantage,
 } from './stats'
 
@@ -139,5 +140,22 @@ describe('player stats', () => {
     expect(adv.games).toBe(4)
     expect(adv.starterWins).toBe(1)
     expect(adv.othersRate).toBeCloseTo(2 / 4)
+  })
+})
+
+describe('progressByRound', () => {
+  it('accumulates points per round, with the form and the lead', () => {
+    const data: StatsData = {
+      sessions: [session('s1', ['a', 'b'], null, 'active')],
+      entries: [entry('s1', 'a', 1, 100), entry('s1', 'b', 1, 0), entry('s1', 'a', 2, 300), entry('s1', 'b', 2, 500)],
+      draws: [],
+    }
+    const rows = progressByRound(data, ['a', 'b'], 2)
+    expect(rows.map((r) => [r.round, r.a, r.b, r.lead])).toEqual([
+      [1, 100, 0, 100],
+      [2, 400, 500, -100],
+    ])
+    expect(rows[1].a_form).toBe(200)
+    expect(rows[1].b_form).toBe(250)
   })
 })

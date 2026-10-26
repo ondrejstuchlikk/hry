@@ -39,8 +39,8 @@ export function DrawOverlay({ names, starterIndex, onDone }: { names: string[]; 
   }, [finished, onDone])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-sm rounded-3xl bg-surface p-6 text-center shadow-xl">
         <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-stone-500">Losování</p>
         <ul className="space-y-2">
           {names.map((name, i) => (
@@ -50,7 +50,7 @@ export function DrawOverlay({ names, starterIndex, onDone }: { names: string[]; 
                 i === index
                   ? finished
                     ? 'scale-105 bg-brand-600 text-white shadow-lg'
-                    : 'bg-brand-100 text-brand-800'
+                    : 'bg-brand-100 text-accent'
                   : 'bg-stone-50 text-stone-500'
               }`}
             >
@@ -62,7 +62,7 @@ export function DrawOverlay({ names, starterIndex, onDone }: { names: string[]; 
           {finished && (
             <>
               <p className="text-2xl font-extrabold">
-                Začíná: <span className="text-brand-700">{names[starterIndex]}</span>
+                Začíná: <span className="text-accent">{names[starterIndex]}</span>
               </p>
               <Button size="lg" className="mt-4 w-full" onClick={onDone} autoFocus>
                 Hrát

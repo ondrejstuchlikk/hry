@@ -34,3 +34,13 @@ export function joinNames(names: string[]): string {
   if (names.length <= 1) return names.join('')
   return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`
 }
+
+/** Compact axis numbers: „950“, „12 tis.“, „1,2 mil.“ */
+export function formatCompact(value: number): string {
+  return value.toLocaleString(LOCALE, { notation: 'compact', maximumFractionDigits: 1 })
+}
+
+/** Signed number with a real minus: „+1 200“, „−350“. */
+export function formatSigned(value: number): string {
+  return `${value > 0 ? '+' : value < 0 ? '−' : ''}${formatNumber(Math.abs(value))}`
+}

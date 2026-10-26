@@ -42,7 +42,7 @@ export function Dialog({
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -52,7 +52,7 @@ export function Dialog({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
-        className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl outline-none bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:p-6 ${wide ? 'sm:max-w-xl' : 'sm:max-w-md'}`}
+        className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl outline-none bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:p-6 ${wide ? 'sm:max-w-xl' : 'sm:max-w-md'}`}
       >
         {title && <h2 className="mb-4 text-xl font-bold text-stone-900">{title}</h2>}
         {children}
