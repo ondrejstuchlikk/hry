@@ -33,7 +33,7 @@ Supabase Auth requires an email. Users must only ever see **username + password*
 - Map username → synthetic email: `${username.toLowerCase()}@${AUTH_EMAIL_DOMAIN}`. Keep `AUTH_EMAIL_DOMAIN` as a single constant. Verify that Supabase accepts the chosen domain during signup; pick a different one if it is rejected.
 - In the Supabase dashboard, **"Confirm email" must be disabled** (document this in the README setup steps).
 - Username rules: 3–20 chars, `a-z`, `0-9`, `_`, `-`, case-insensitive, unique.
-- Password: minimum 6 characters (Supabase default). No password reset flow needed (document that an admin can reset it in the Supabase dashboard).
+- Password: any characters, minimum 5. Supabase needs ≥ 6, so the client appends a fixed suffix (`PASSWORD_SUFFIX` in `src/lib/auth.ts`). No password reset flow needed (document that an admin can reset it in the Supabase dashboard).
 - On signup create a row in `profiles` and a linked row in `players` (via a DB trigger on `auth.users` insert, or an RPC — prefer a trigger reading `raw_user_meta_data.username`).
 - Session persists in the browser (Supabase default).
 

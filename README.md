@@ -22,7 +22,11 @@ React + Vite + TypeScript, Tailwind, Recharts, Supabase; hosted on GitHub Pages.
    whenever someone opens the app.
 5. **Project Settings → API**: copy the *Project URL* and the *anon public* key.
 
-Password reset: there is no reset flow. An admin can set a new password in **Authentication → Users**.
+Passwords: any characters, at least 5. Supabase requires at least 6, so the app appends the hidden suffix
+`#hry` (`PASSWORD_SUFFIX` in `src/lib/auth.ts`). Keep Supabase's **Password requirements** at "No required characters".
+
+Password reset: there is no reset flow. An admin can set a new password in **Authentication → Users** —
+enter the new password **with `#hry` appended** (user's password `abcde` → enter `abcde#hry`).
 
 ### 2. GitHub Pages
 

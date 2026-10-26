@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Button, ErrorText } from '../components/ui'
-import { signIn, signUp } from '../lib/auth'
+import { MIN_PASSWORD_LENGTH, signIn, signUp } from '../lib/auth'
 
 type Tab = 'login' | 'register'
 
@@ -82,7 +82,7 @@ export function LoginPage() {
               />
             </label>
             {tab === 'register' && (
-              <p className="text-sm text-stone-500">3–20 znaků: a–z, 0–9, „_“, „-“. Heslo aspoň 6 znaků.</p>
+              <p className="text-sm text-stone-500">Jméno: 3–20 znaků (a–z, 0–9, „_“, „-“). Heslo: aspoň {MIN_PASSWORD_LENGTH} znaků, libovolné.</p>
             )}
             <ErrorText>{error}</ErrorText>
             <Button type="submit" size="lg" className="w-full" disabled={busy}>
