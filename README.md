@@ -12,15 +12,13 @@ React + Vite + TypeScript, Tailwind, Recharts, Supabase; hosted on GitHub Pages.
    1. `supabase/migrations/001_schema.sql`
    2. `supabase/migrations/002_functions.sql`
    3. `supabase/migrations/003_rls.sql`
-   4. `supabase/seed.sql`
+   4. `supabase/migrations/004_endless_games.sql`
+   5. `supabase/seed.sql`
 3. **Authentication → Sign In / Providers → Email**: turn **off „Confirm email“**.
    (Users sign in with a username; the app maps it to a synthetic email `<username>@ondrejstuchlikk.github.io`
    — see `AUTH_EMAIL_DOMAIN` in `src/lib/auth.ts`. No mail is ever sent. If signup fails with an
    "invalid email" error, change that constant to another domain.)
-4. Optional: close idle sessions server-side even when nobody opens the app — enable the `pg_cron` extension
-   (Database → Extensions) and run `supabase/optional/pg_cron.sql`. Without it, idle sessions are closed
-   whenever someone opens the app.
-5. **Project Settings → API**: copy the *Project URL* and the *anon public* key.
+4. **Project Settings → API**: copy the *Project URL* and the *anon public* key.
 
 Passwords: any characters, at least 5. Supabase requires at least 6, so the app appends the hidden suffix
 `#hry` (`PASSWORD_SUFFIX` in `src/lib/auth.ts`). Keep Supabase's **Password requirements** at "No required characters".
@@ -45,6 +43,14 @@ npm run dev
 ```
 
 Other scripts: `npm test` (Vitest), `npm run build`, `npm run lint`, `npm run icons` (regenerate PWA icons).
+
+## How games work
+
+Games never end: there is one endless game per game type and set of players („Nová hra“ with the
+same players opens it). The turn order is redrawn on the first visit of each new day. For wins and
+statistics, a game is split into evenings — a pause of at least an hour starts a new evening
+(`src/games/kostky/evenings.ts`). The game page shows the entry panel, the group's charts and the
+score table; „Celkové statistiky“ compares players across all games.
 
 ## Structure
 

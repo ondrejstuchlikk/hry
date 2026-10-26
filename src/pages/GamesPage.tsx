@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { NewSessionDialog } from '../components/NewSessionDialog'
 import { Button, Card, EmptyState, errorMessage, ErrorText, SectionTitle, Spinner } from '../components/ui'
 import { DEFAULT_GAME_TYPE, gameModules } from '../games'
-import { closeStaleSessions, getGameTypes, listSessions } from '../lib/api'
+import { getGameTypes, listSessions } from '../lib/api'
 import { formatDate, formatTime, joinNames } from '../lib/format'
 import type { GameType, SessionWithPlayers } from '../lib/types'
 import { usePlayers } from '../lib/usePlayers'
-
-const RECENT_LIMIT = 20
 
 const GAME_ICONS: Record<string, string> = { kostky: '🎲', zolik: '🃏' }
 
@@ -17,8 +15,7 @@ export function GamesPage() {
   const { names, reload: reloadPlayers } = usePlayers()
   const [gameTypes, setGameTypes] = useState<GameType[] | null>(null)
   const [gameTypeId, setGameTypeId] = useState(DEFAULT_GAME_TYPE)
-  const [active, setActive] = useState<SessionWithPlayers[] | null>(null)
-  const [recent, setRecent] = useState<SessionWithPlayers[]>([])
+  const [sessions, setSessions] = useState<SessionWithPlayers[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -33,17 +30,10 @@ export function GamesPage() {
   }, [])
 
   const load = useCallback(async () => {
-    // Closing idle sessions is best effort; the lists load either way.
-    await closeStaleSessions().catch(() => {})
     try {
-      const [activeSessions, endedSessions] = await Promise.all([
-        listSessions({ gameTypeId, status: 'active' }),
-        listSessions({ gameTypeId, status: 'ended', limit: RECENT_LIMIT }),
-      ])
-      setActive(activeSessions)
-      setRecent(endedSessions)
+      setSessions(await listSessions({ gameTypeId }))
     } catch (e) {
-      setActive([])
+      setSessions([])
       setError(errorMessage(e))
     }
   }, [gameTypeId])
@@ -54,8 +44,6 @@ export function GamesPage() {
 
   const gameType = gameTypes?.find((g) => g.id === gameTypeId)
   const playerNames = (s: SessionWithPlayers) => joinNames(s.players.map((p) => names.get(p.player_id) ?? '?'))
-  const winnerNames = (s: SessionWithPlayers) =>
-    s.winner_player_ids?.length ? joinNames(s.winner_player_ids.map((id) => names.get(id) ?? '?')) : '–'
 
   return (
     <div className="space-y-6">
@@ -99,22 +87,22 @@ export function GamesPage() {
       </Button>
 
       <section>
-        <SectionTitle>Rozehrané hry</SectionTitle>
-        {active === null ? (
+        <SectionTitle>Moje hry</SectionTitle>
+        {sessions === null ? (
           <Spinner />
-        ) : active.length === 0 ? (
+        ) : sessions.length === 0 ? (
           <Card>
-            <EmptyState>Žádná rozehraná hra</EmptyState>
+            <EmptyState>Zatím žádné hry – začni tlačítkem „Nová hra“</EmptyState>
           </Card>
         ) : (
           <ul className="space-y-2">
-            {active.map((s) => (
+            {sessions.map((s) => (
               <li key={s.id}>
                 <Card className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="truncate font-semibold">{playerNames(s)}</div>
                     <div className="text-sm text-stone-500">
-                      Začátek {formatDate(s.started_at)} {formatTime(s.started_at)}
+                      Naposledy {formatDate(s.last_activity_at)} {formatTime(s.last_activity_at)}
                     </div>
                   </div>
                   <Button onClick={() => navigate(`/hra/${s.id}`)}>Pokračovat</Button>
@@ -122,34 +110,6 @@ export function GamesPage() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      <section>
-        <SectionTitle>Odehrané hry</SectionTitle>
-        {active !== null && recent.length === 0 ? (
-          <Card>
-            <EmptyState>Zatím žádné odehrané hry</EmptyState>
-          </Card>
-        ) : (
-          <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-stone-200">
-            <ul className="divide-y divide-stone-100">
-              {recent.map((s) => (
-                <li key={s.id}>
-                  <Link
-                    to={`/hra/${s.id}`}
-                    className="grid grid-cols-[auto_1fr] gap-x-4 px-4 py-3 hover:bg-stone-50 sm:grid-cols-[7rem_1fr_auto]"
-                  >
-                    <span className="tabular text-sm text-stone-500 sm:text-base">{formatDate(s.started_at)}</span>
-                    <span className="truncate font-medium">{playerNames(s)}</span>
-                    <span className="col-span-2 text-sm text-stone-600 sm:col-span-1 sm:text-base">
-                      🏆 {winnerNames(s)}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         )}
       </section>
 

@@ -4,12 +4,9 @@ import type { SessionDetail } from '../lib/types'
 
 export interface SessionScreenProps {
   detail: SessionDetail
-  /** Called after the session was ended (manually or for inactivity); the page reloads it. */
-  onEnded: () => void
-}
-
-export interface SessionResultProps {
-  detail: SessionDetail
+  /** Show the draw animation of the current turn order right away (new game). */
+  showDraw: boolean
+  onDrawShown: () => void
 }
 
 export interface StatsViewProps {
@@ -17,7 +14,7 @@ export interface StatsViewProps {
   /** Players to show, in a stable order (colors follow this order). */
   playerIds: string[]
   names: Map<string, string>
-  /** 'group' = stats of one group, 'player' = one player across all sessions. */
+  /** 'group' = stats of one group (game page), 'player' = one player across all sessions. */
   mode: 'group' | 'player'
 }
 
@@ -33,10 +30,8 @@ export interface ComparisonTableProps {
  */
 export interface GameModule {
   id: string
-  /** Live scoring screen for an active session. */
+  /** Scoring screen of an (endless) session, incl. its statistics. */
   SessionScreen: ComponentType<SessionScreenProps>
-  /** Read-only view of an ended session, incl. the summary. */
-  SessionResult: ComponentType<SessionResultProps>
   StatsView: ComponentType<StatsViewProps>
   /** Comparison of many players (overall statistics). */
   ComparisonTable: ComponentType<ComparisonTableProps>

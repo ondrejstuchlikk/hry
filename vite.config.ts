@@ -9,6 +9,14 @@ export default defineConfig(({ mode }) => {
   return {
     base: env.VITE_BASE || '/hry/',
     plugins: [react(), tailwindcss()],
+    build: {
+      rollupOptions: {
+        output: {
+          // Keep the Supabase client out of the app chunk (stays under the 500 kB warning).
+          manualChunks: (id: string) => (id.includes('node_modules/@supabase/') ? 'supabase' : undefined),
+        },
+      },
+    },
     test: {
       environment: 'node',
     },

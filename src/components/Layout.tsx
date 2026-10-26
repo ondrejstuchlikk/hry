@@ -4,7 +4,6 @@ import { useAuth } from '../lib/AuthProvider'
 
 const links = [
   { to: '/', label: 'Hry', end: true },
-  { to: '/statistiky', label: 'Statistiky', end: false },
   { to: '/celkove', label: 'Celkové statistiky', end: false },
 ]
 

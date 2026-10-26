@@ -1,13 +1,15 @@
 import { useMemo } from 'react'
 import { formatNumber, formatPercent } from '../../lib/format'
 import type { ComparisonTableProps } from '../types'
+import { eveningStats } from './evenings'
 import { playerSummary, scoresBySession } from './stats'
 
-/** One row per player over all loaded sessions. */
+/** One row per player over all loaded sessions (counted per evening). */
 export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps) {
   const rows = useMemo(() => {
-    const scores = scoresBySession(data)
-    return playerIds.map((id) => playerSummary(data, id, scores))
+    const evenings = eveningStats(data)
+    const scores = scoresBySession(evenings)
+    return playerIds.map((id) => playerSummary(evenings, id, scores))
   }, [data, playerIds])
 
   const pct = (v: number | null) => (v === null ? '–' : formatPercent(v))
@@ -19,7 +21,7 @@ export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps
         <thead className="bg-stone-50 text-xs uppercase text-stone-500">
           <tr>
             <th className="sticky left-0 bg-stone-50 px-3 py-2 text-left font-semibold">Hráč</th>
-            <th className="px-3 py-2 font-semibold">Hry</th>
+            <th className="px-3 py-2 font-semibold">Večery</th>
             <th className="px-3 py-2 font-semibold">Výhry</th>
             <th className="px-3 py-2 font-semibold">Remízy</th>
             <th className="px-3 py-2 font-semibold">Úspěšnost</th>
@@ -27,7 +29,7 @@ export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps
             <th className="px-3 py-2 font-semibold">Průměr na hod</th>
             <th className="px-3 py-2 font-semibold">Nejvyšší hod</th>
             <th className="px-3 py-2 font-semibold">Podíl nul</th>
-            <th className="px-3 py-2 font-semibold">Ø součet za hru</th>
+            <th className="px-3 py-2 font-semibold">Ø součet za večer</th>
           </tr>
         </thead>
         <tbody>

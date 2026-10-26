@@ -30,7 +30,11 @@ export function OverallStatsPage() {
     if (!data || !playerId) return null
     const sessions = data.sessions.filter((s) => s.players.some((p) => p.player_id === playerId))
     const ids = new Set(sessions.map((s) => s.id))
-    return { sessions, entries: data.entries.filter((e) => ids.has(e.session_id)) }
+    return {
+      sessions,
+      entries: data.entries.filter((e) => ids.has(e.session_id)),
+      draws: data.draws.filter((d) => ids.has(d.session_id)),
+    }
   }, [data, playerId])
 
   const module = gameModules[gameTypeId]

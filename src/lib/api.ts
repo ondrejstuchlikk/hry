@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type {
+  Draw,
   Entry,
   GameType,
   Player,
@@ -83,18 +84,33 @@ export async function createGuest(displayName: string, createdBy: string): Promi
 // Sessions
 // ---------------------------------------------------------------------------
 
-export async function closeStaleSessions(): Promise<number> {
-  return check(await supabase.rpc('close_stale_sessions')) as number
-}
-
+/** Returns the existing game of exactly these players, or creates a new one. */
 export async function createSession(gameTypeId: string, playerIds: string[]): Promise<string> {
   return check(
     await supabase.rpc('create_session', { p_game_type_id: gameTypeId, p_player_ids: playerIds }),
   ) as string
 }
 
-export async function endSession(sessionId: string): Promise<Session> {
-  return check(await supabase.rpc('end_session', { p_session_id: sessionId, p_reason: 'manual' })) as Session
+/** Redraws the turn order on the first visit of a new day; returns the new draw or null. */
+export async function redrawIfNewDay(sessionId: string): Promise<Draw | null> {
+  const dayStart = new Date()
+  dayStart.setHours(0, 0, 0, 0)
+  return check(
+    await supabase.rpc('redraw_if_new_day', { p_session_id: sessionId, p_day_start: dayStart.toISOString() }),
+  ) as Draw | null
+}
+
+async function loadDraws(sessionIds: string[]): Promise<Draw[]> {
+  if (sessionIds.length === 0) return []
+  return fetchAll<Draw>((from, to) =>
+    supabase
+      .from('session_draws')
+      .select('*')
+      .in('session_id', sessionIds)
+      .order('session_id')
+      .order('from_round')
+      .range(from, to),
+  )
 }
 
 const SESSION_WITH_PLAYERS = '*, players:session_players(session_id, player_id, turn_order)'
@@ -103,23 +119,13 @@ function sortPlayers(s: SessionWithPlayers): SessionWithPlayers {
   return { ...s, players: [...s.players].sort((a, b) => a.turn_order - b.turn_order) }
 }
 
-/** Sessions accessible to the user (RLS: created by or played in), newest first. */
-export async function listSessions(options: {
-  gameTypeId?: string
-  status?: Session['status']
-  groupKey?: string
-  limit?: number
-}): Promise<SessionWithPlayers[]> {
+/** Sessions accessible to the user (RLS: created by or played in), most recently played first. */
+export async function listSessions(options: { gameTypeId?: string; groupKey?: string }): Promise<SessionWithPlayers[]> {
   const build = () => {
     let query = supabase.from('sessions').select(SESSION_WITH_PLAYERS)
     if (options.gameTypeId) query = query.eq('game_type_id', options.gameTypeId)
-    if (options.status) query = query.eq('status', options.status)
     if (options.groupKey) query = query.eq('group_key', options.groupKey)
-    return query.order('started_at', { ascending: false }).order('id')
-  }
-  if (options.limit) {
-    const rows = check(await build().limit(options.limit)) as SessionWithPlayers[]
-    return rows.map(sortPlayers)
+    return query.order('last_activity_at', { ascending: false }).order('id')
   }
   const rows = await fetchAll<SessionWithPlayers>((from, to) => build().range(from, to))
   return rows.map(sortPlayers)
@@ -132,7 +138,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
     | null
   if (!session) return null
 
-  const [gameType, sessionPlayers, rounds, entries] = await Promise.all([
+  const [gameType, sessionPlayers, rounds, entries, draws] = await Promise.all([
     supabase.from('game_types').select('*').eq('id', session.game_type_id).single().then(check),
     supabase.from('session_players').select('*').eq('session_id', sessionId).then(check),
     fetchAll<Round>((from, to) =>
@@ -141,6 +147,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
     fetchAll<Entry>((from, to) =>
       supabase.from('entries').select('*').eq('session_id', sessionId).order('seq').range(from, to),
     ),
+    loadDraws([sessionId]),
   ])
 
   const spRows = sessionPlayers as SessionPlayerRow[]
@@ -166,6 +173,7 @@ export async function loadSessionDetail(sessionId: string): Promise<SessionDetai
       .sort((a, b) => a.turnOrder - b.turnOrder),
     rounds,
     entries: entries.map((e) => toScored(e, roundNo.get(e.round_id) ?? 0)),
+    draws,
   }
 }
 
@@ -181,13 +189,12 @@ function toScored(e: Entry, roundNo: number): ScoredEntry {
   }
 }
 
-/** Returns the saved entry, or null when the session was closed for inactivity instead. */
 export async function addEntry(
   sessionId: string,
   roundNo: number,
   playerId: string,
   value: number,
-): Promise<ScoredEntry | null> {
+): Promise<ScoredEntry> {
   const entry = check(
     await supabase.rpc('add_entry', {
       p_session_id: sessionId,
@@ -195,8 +202,8 @@ export async function addEntry(
       p_player_id: playerId,
       p_value: value,
     }),
-  ) as Entry | null
-  return entry ? toScored(entry, roundNo) : null
+  ) as Entry
+  return toScored(entry, roundNo)
 }
 
 /** Returns the deleted entry, or null when there was nothing to undo. */
@@ -211,12 +218,14 @@ export async function undoLastEntry(sessionId: string): Promise<Entry | null> {
 export interface StatsData {
   /** Sorted by started_at ascending. */
   sessions: SessionWithPlayers[]
+  /** Chronological: by session, then by seq. */
   entries: ScoredEntry[]
+  draws: Draw[]
 }
 
 /** All sessions + entries of a game type visible to the user, optionally limited to one group. */
 export async function loadStatsData(gameTypeId: string, groupKey?: string): Promise<StatsData> {
-  const sessions = (await listSessions({ gameTypeId, groupKey })).reverse()
+  const sessions = (await listSessions({ gameTypeId, groupKey })).sort((a, b) => a.started_at.localeCompare(b.started_at))
 
   type Row = Omit<Entry, 'round_id' | 'id'> & { id: string; rounds: { round_no: number } }
   const rows = await fetchAll<Row>((from, to) => {
@@ -242,5 +251,6 @@ export async function loadStatsData(gameTypeId: string, groupKey?: string): Prom
     }))
     .sort((a, b) => (sessionIndex.get(a.session_id) ?? 0) - (sessionIndex.get(b.session_id) ?? 0) || a.seq - b.seq)
 
-  return { sessions, entries }
+  const draws = await loadDraws(sessions.map((s) => s.id))
+  return { sessions, entries, draws }
 }

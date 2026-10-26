@@ -1,9 +1,11 @@
-// Kostky rules: every player throws once per round in a fixed turn order.
-// Only complete rounds count toward the winner; higher total wins.
-import type { ScoredEntry } from '../../lib/types'
+// Kostky rules: every player throws once per round, in the order of the draw that
+// applies to that round (redrawn each day). Only complete rounds count toward the
+// winner; higher total wins.
+import type { Draw, ScoredEntry } from '../../lib/types'
 import { pickWinners } from '../winners'
 
 export type TurnEntry = Pick<ScoredEntry, 'player_id' | 'round_no' | 'value'>
+export type DrawOrder = Pick<Draw, 'from_round' | 'player_ids'>
 
 export interface Turn {
   roundNo: number
@@ -14,13 +16,25 @@ function lastRoundNo(entries: TurnEntry[]): number {
   return entries.reduce((max, e) => Math.max(max, e.round_no), 0)
 }
 
-/** Whose turn it is: first player (by turn order) missing in the last round, else a new round. */
-export function nextTurn(order: string[], entries: TurnEntry[]): Turn {
+/** Turn order of a round: the latest draw starting at or before it (draws sorted by from_round). */
+export function orderForRound(draws: DrawOrder[], roundNo: number): string[] {
+  let order = draws[0].player_ids
+  for (const d of draws) if (d.from_round <= roundNo) order = d.player_ids
+  return order
+}
+
+/**
+ * Whose turn it is: the first player (by that round's order) missing in the last round,
+ * else the first player of a new round. A newer draw starts a new round, leaving an
+ * unfinished round unfinished.
+ */
+export function nextTurn(draws: DrawOrder[], entries: TurnEntry[]): Turn {
   const last = lastRoundNo(entries)
-  if (last === 0) return { roundNo: 1, playerId: order[0] }
+  const latest = draws[draws.length - 1]
+  if (last < latest.from_round) return { roundNo: latest.from_round, playerId: latest.player_ids[0] }
   const done = new Set(entries.filter((e) => e.round_no === last).map((e) => e.player_id))
-  const missing = order.find((id) => !done.has(id))
-  return missing ? { roundNo: last, playerId: missing } : { roundNo: last + 1, playerId: order[0] }
+  const missing = orderForRound(draws, last).find((id) => !done.has(id))
+  return missing ? { roundNo: last, playerId: missing } : { roundNo: last + 1, playerId: orderForRound(draws, last + 1)[0] }
 }
 
 /** Round numbers in which every player has an entry. */

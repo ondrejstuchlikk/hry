@@ -92,6 +92,7 @@ describe('player stats', () => {
       entry('s4', 'a', 1, 50),
       entry('s5', 'a', 1, 0),
     ],
+    draws: [],
   }
 
   it('summarises wins, ties, throws and streaks', () => {
@@ -117,6 +118,7 @@ describe('player stats', () => {
     const streak: StatsData = {
       sessions: [session('s1', ['a', 'b'], ['a']), session('s2', ['a', 'b'], ['a']), session('s3', ['a', 'b'], ['b'])],
       entries: [],
+      draws: [],
     }
     expect(playerSummary(streak, 'a').longestWinStreak).toBe(2)
   })

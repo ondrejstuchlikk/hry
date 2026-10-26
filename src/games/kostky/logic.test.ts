@@ -6,33 +6,49 @@ import {
   kostkyWinners,
   liveStats,
   nextTurn,
+  orderForRound,
   parseThrow,
   sessionTotals,
   type TurnEntry,
 } from './logic'
 
 const order = ['a', 'b', 'c']
+const draws = [{ from_round: 1, player_ids: order }]
 const e = (player_id: string, round_no: number, value: number): TurnEntry => ({ player_id, round_no, value })
 
 describe('nextTurn', () => {
   it('starts with the first player in round 1', () => {
-    expect(nextTurn(order, [])).toEqual({ roundNo: 1, playerId: 'a' })
+    expect(nextTurn(draws, [])).toEqual({ roundNo: 1, playerId: 'a' })
   })
 
   it('moves to the next player within a round', () => {
-    expect(nextTurn(order, [e('a', 1, 0)])).toEqual({ roundNo: 1, playerId: 'b' })
-    expect(nextTurn(order, [e('a', 1, 0), e('b', 1, 50)])).toEqual({ roundNo: 1, playerId: 'c' })
+    expect(nextTurn(draws, [e('a', 1, 0)])).toEqual({ roundNo: 1, playerId: 'b' })
+    expect(nextTurn(draws, [e('a', 1, 0), e('b', 1, 50)])).toEqual({ roundNo: 1, playerId: 'c' })
   })
 
   it('starts a new round with the first player after a complete round', () => {
     const entries = [e('a', 1, 0), e('b', 1, 50), e('c', 1, 100)]
-    expect(nextTurn(order, entries)).toEqual({ roundNo: 2, playerId: 'a' })
+    expect(nextTurn(draws, entries)).toEqual({ roundNo: 2, playerId: 'a' })
   })
 
   it('returns the turn to the player whose entry was undone', () => {
     const entries = [e('a', 1, 0), e('b', 1, 50), e('c', 1, 100), e('a', 2, 300)]
-    expect(nextTurn(order, entries.slice(0, -1))).toEqual({ roundNo: 2, playerId: 'a' })
-    expect(nextTurn(order, entries.slice(0, 2))).toEqual({ roundNo: 1, playerId: 'c' })
+    expect(nextTurn(draws, entries.slice(0, -1))).toEqual({ roundNo: 2, playerId: 'a' })
+    expect(nextTurn(draws, entries.slice(0, 2))).toEqual({ roundNo: 1, playerId: 'c' })
+  })
+
+  it('follows a redraw from its round on', () => {
+    const redrawn = [...draws, { from_round: 2, player_ids: ['c', 'a', 'b'] }]
+    const round1 = [e('a', 1, 0), e('b', 1, 50), e('c', 1, 100)]
+    expect(nextTurn(redrawn, round1)).toEqual({ roundNo: 2, playerId: 'c' })
+    expect(nextTurn(redrawn, [...round1, e('c', 2, 0)])).toEqual({ roundNo: 2, playerId: 'a' })
+    expect(orderForRound(redrawn, 1)).toEqual(order)
+    expect(orderForRound(redrawn, 5)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('leaves an unfinished round behind after a redraw', () => {
+    const redrawn = [...draws, { from_round: 2, player_ids: ['b', 'c', 'a'] }]
+    expect(nextTurn(redrawn, [e('a', 1, 0)])).toEqual({ roundNo: 2, playerId: 'b' })
   })
 })
 

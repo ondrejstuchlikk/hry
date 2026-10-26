@@ -41,7 +41,8 @@ Supabase Auth requires an email. Users must only ever see **username + password*
 
 - **Player** — someone who plays. Either linked to a user account or a **guest** (no account, created by a user, display name only).
 - **Game type** — `kostky` now, `zolik` later. Holds config such as scoring direction.
-- **Session** („hra“ / instance) — one evening of play of one game type by a fixed set of players. Has a randomly drawn turn order. Ends via the button „Pro dnešek konec“ or automatically after **1 hour of inactivity**.
+- **Session** („hra“ / instance) — an **endless** game of one game type by a fixed set of players; one per player set („Nová hra“ with the same players opens the existing one). Sessions never end (no „Pro dnešek konec“, no inactivity closing). The turn order is drawn at creation and **redrawn on the first visit of each new day** (`session_draws`, RPC `redraw_if_new_day`); a redraw starts a new round, an unfinished round stays unfinished.
+- **Evening** — derived, not stored: a pause of ≥ 1 hour between throws starts a new evening. Wins and per-game statistics are computed per evening (only its complete rounds count; the evening in progress has no result).
 - **Round** — one cycle in which every player in the session takes one turn (kostky). For žolík a round = one hand.
 - **Entry** — one recorded value for one player in one round.
 - **Group** — the exact set of players of a session. Stats are by default scoped to the group (e.g. the pair A+B). Computed via `sessions.group_key`.
@@ -136,68 +137,65 @@ Keep policies simple and readable; add a short comment above each.
 ### RPC functions (SQL, `security definer` where needed)
 
 - `create_session(game_type_id, player_ids uuid[])` → shuffles players randomly (draw who starts), inserts `sessions`, `session_players`, computes `group_key`, returns session id. The creator's own player must be included.
-- `end_session(session_id, reason)` → sets status, `ended_at`, and computes `winner_player_ids` (see "Winner rules").
-- `close_stale_sessions()` → ends every active session with `last_activity_at < now() - interval '1 hour'` (reason `inactivity`, `ended_at = last_activity_at`). Called by the client on app load and before showing the session list. Additionally, if `pg_cron` is available, schedule it every 10 minutes (document as optional in README).
+- `redraw_if_new_day(session_id, day_start)` → new turn order from the next round when nothing was thrown or drawn since the client's local midnight.
+- (Removed in migration 004: `end_session`, `close_stale_sessions` — games are endless.)
 - Stats RPCs/views as needed (see Statistics). Prefer SQL views/functions for aggregations instead of downloading all entries, but keep it pragmatic — the dataset is small (tens of thousands of rows at most), so client-side aggregation of a filtered set is acceptable where it keeps code simpler.
 
 ## Winner rules
 
-- **Kostky** (`higher_better`): the winner is the player with the **highest total** in the session.
-- Only **complete rounds** count toward the winner: if the session ends mid-round, ignore the incomplete last round when comparing totals (but keep those entries for per-throw statistics).
-- Ties → all tied players are winners (`winner_player_ids` has several ids). Sessions with zero complete rounds have no winner.
-- When the user clicks „Pro dnešek konec“ in the middle of a round, show a dialog: „Kolo ještě není dohrané. Poslední nedokončené kolo se do výsledku nezapočítá.“ with buttons „Ukončit“ and „Dohrát kolo“.
+(Applied per **evening**, see Core concepts — sessions themselves never end.)
+
+- **Kostky** (`higher_better`): the winner is the player with the **highest total** in the evening.
+- Only **complete rounds** count toward the winner: an unfinished round is ignored when comparing totals (but its entries are kept for per-throw statistics). A round belongs to the evening of its first throw.
+- Ties → all tied players are winners. Evenings with zero complete rounds have no winner.
 - **Žolík** (later, `lower_better`): winner = lowest total. Implement the winner logic generically based on `game_types.scoring`.
 
 ## Pages / UI (Czech)
 
-Top nav: „Hry“, „Statistiky“, „Celkové statistiky“, username + „Odhlásit“.
+Top nav: „Hry“, „Celkové statistiky“, username + „Odhlásit“. (The group statistics live on the game page.)
 
 1. **Přihlášení / Registrace** — tabs „Přihlásit se“ / „Registrovat“; fields „Uživatelské jméno“, „Heslo“. Clear Czech error messages (e.g. „Uživatelské jméno je už obsazené“, „Špatné jméno nebo heslo“).
 
 2. **Hry (home)** — choose game type (cards; only „Kostky“ active now, „Žolík“ can be shown as „Již brzy“ disabled).
-   - List of **active sessions** for the user → „Pokračovat“.
+   - „Moje hry“: all the user's games (most recently played first) → „Pokračovat“.
    - Button „Nová hra“ → dialog:
      - Add players: by username („Přidat hráče podle jména“) with autocomplete, or „Přidat hosta“ (display name; reuse previously created guests from a dropdown).
      - Current user is pre-added. Minimum 2 players.
-     - „Začít hru“ → calls `create_session`, then shows an animated draw: „Začíná: <jméno>“.
-   - List of recent ended sessions (date, players, winner) — clickable to a read-only session detail.
+     - „Začít hru“ → calls `create_session` (returns the existing game for the same players), then shows an animated draw: „Začíná: <jméno>“ (for a new game).
 
 3. **Session screen — Kostky (most important screen, optimize heavily)**
+   - Opening the game on a new day redraws the turn order and shows the draw animation.
    - Big header: „Na řadě: <jméno>“, round number („Kolo 5“).
    - One large numeric input, **autofocused at all times**. On mobile use `inputMode="numeric"`, `pattern="[0-9]*"`.
    - **Enter** (or a large „Zapsat“ button) saves the entry and immediately moves to the next player in turn order; the input is cleared and focused again. No other clicks needed.
    - Validation: integer ≥ 0. **0 is valid and common** — make sure an empty input is not treated as 0; empty input + Enter does nothing.
    - If value > 10 000: confirmation dialog „Opravdu <hodnota>? To je víc než 10 000.“ with buttons „Ano“ (save) and „Opravit“ (back to input with value selected). Enter in the dialog = „Ano“, Esc = „Opravit“. Threshold comes from `game_types.config.max_warning`.
    - Button „Zpět“ (and keyboard shortcut Ctrl+Z when input is empty): deletes the last entry (highest `seq`) and returns the turn to that player.
-   - Scoreboard: table with players as columns, rounds as rows, totals at the bottom, current leader highlighted. On desktop show next to the input; on mobile below it, newest round on top.
-   - Small live stats for the session: average per throw for each player, number of zeros.
-   - Button „Pro dnešek konec“ → ends the session (with the incomplete-round dialog when relevant), then shows a summary: winner („Vítěz: <jméno>“), totals, best throw of the night, then link to stats.
+   - Small live stats next to the input (desktop) / below it (mobile): totals and average for the whole game, plus total, average and zeros of the evening in progress („Dnešní večer“).
+   - Below: the group statistics (summary cards + all charts, see Statistics), updated live after every throw.
+   - At the bottom: „Tabulka hodů“ — players as columns, rounds as rows (newest on top), totals, current leader highlighted.
    - Writes are optimistic but must handle errors (show „Nepodařilo se uložit, zkus to znovu“ and keep the value in the input).
    - Only one device writes per session at a time; no realtime sync required. But when opening a session, always load fresh data from the DB.
 
-4. **Statistiky (per group — default)**
-   - Group selector at the top: all groups the user has played in, labelled by player names (e.g. „Ondra & Rob“), default = most recently played group. Game type selector (Kostky).
-   - Content described in Statistics section.
-
-5. **Celkové statistiky (overall)**
+4. **Celkové statistiky (overall)**
    - Same structure, but for a selected player across **all** sessions regardless of co-players. Player selector (default = me). Include a comparison table of all players the user has played with.
 
 ## Statistics (Kostky)
 
-All stats are computed over **all ended and active sessions** in the selected scope (group or player). Every stat block has a Czech title. Suggested set:
+All stats are computed over **all evenings** in the selected scope (the game's group on the game page, or a player). The evening in progress counts for throw stats but has no result yet. Every stat block has a Czech title. Suggested set:
 
 **Summary cards (per player):**
-- „Vyhrané hry“ — number of sessions won (e.g. A: 12, B: 6), plus „Remízy“ and win rate %
-- „Odehrané hry“, „Počet hodů“
+- „Vyhrané večery“ — number of evenings won (e.g. A: 12, B: 6), plus „Remízy“ and win rate %
+- „Odehrané večery“, „Počet hodů“
 - „Průměr na hod“, „Medián“, „Nejvyšší hod“ (with date)
 - „Podíl nul“ (% of throws equal to 0)
-- „Průměrný součet za hru“, „Nejlepší večer“ (highest session total, with date)
+- „Průměrný součet za večer“, „Nejlepší večer“ (highest evening total, with date)
 
 **Charts:**
-- Wins over time — cumulative wins per player (line chart, x = session date)
-- Average per throw per session over time (line, one line per player, optional moving average)
+- Wins over time — cumulative wins per player (line chart, x = evening date)
+- Average per throw per evening over time (line, one line per player, optional moving average)
 - Distribution of throw values — histogram with sensible buckets (0, 1–100, 101–300, …, >5000; make bucket edges a constant)
-- Total per session — bar chart, players side by side
+- Total per evening — bar chart, players side by side
 - Starting player advantage — win rate of the player who started vs. others
 - Streaks: „Nejdelší série nul“, „Nejdelší série vítězství“
 - Head-to-head table in group view: for each pair of players wins vs. losses
@@ -238,9 +236,8 @@ README.md                  # setup steps (in Czech or English, keep it short)
 
 1. Create Supabase project; run migrations (SQL editor or Supabase CLI); run `seed.sql`.
 2. Auth settings: disable „Confirm email“.
-3. Optional: enable `pg_cron` and schedule `close_stale_sessions()`.
-4. Create GitHub repo, add secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; enable GitHub Pages with source „GitHub Actions“.
-5. Local dev: `npm install`, `.env.local`, `npm run dev`.
+3. Create GitHub repo, add secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`; enable GitHub Pages with source „GitHub Actions“.
+4. Local dev: `npm install`, `.env.local`, `npm run dev`.
 
 ## Working rules for the agent
 

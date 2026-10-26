@@ -1,6 +1,5 @@
 import type { Session as AuthSession } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { closeStaleSessions } from './api'
 import { supabase } from './supabase'
 import type { Player, Profile } from './types'
 
@@ -43,8 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!cancelled) {
         setState({ loading: false, authSession, profile: profile ?? null, player: player ?? null })
       }
-      // Sessions idle for over an hour are closed on app load.
-      closeStaleSessions().catch(() => {})
     }
 
     const { data } = supabase.auth.onAuthStateChange((event, authSession) => {

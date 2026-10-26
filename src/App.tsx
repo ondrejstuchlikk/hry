@@ -9,8 +9,7 @@ import { LoginPage } from './pages/LoginPage'
 import { SessionPage } from './pages/SessionPage'
 import { SetupPage } from './pages/SetupPage'
 
-// Statistics pages pull in the charting library; load them on demand.
-const StatsPage = lazy(() => import('./pages/StatsPage').then((m) => ({ default: m.StatsPage })))
+// The statistics page pulls in the charting library; load it on demand.
 const OverallStatsPage = lazy(() => import('./pages/OverallStatsPage').then((m) => ({ default: m.OverallStatsPage })))
 
 function AppRoutes() {
@@ -22,14 +21,6 @@ function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<GamesPage />} />
         <Route path="hra/:sessionId" element={<SessionPage />} />
-        <Route
-          path="statistiky"
-          element={
-            <Suspense fallback={<Spinner />}>
-              <StatsPage />
-            </Suspense>
-          }
-        />
         <Route
           path="celkove"
           element={

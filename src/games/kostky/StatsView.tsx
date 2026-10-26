@@ -14,6 +14,7 @@ import { AXIS_PROPS, ChartCard, GRID_PROPS, seriesColor, TOOLTIP_PROPS } from '.
 import { Card, EmptyState, SectionTitle } from '../../components/ui'
 import { formatDate, formatNumber, formatPercent, formatShortDate } from '../../lib/format'
 import type { StatsViewProps } from '../types'
+import { eveningStats } from './evenings'
 import {
   averageByHour,
   averagePerSession,
@@ -31,10 +32,13 @@ const MOVING_WINDOW = 5
 
 const num = (v: unknown) => (typeof v === 'number' ? formatNumber(v) : '–')
 
-export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps) {
+export function KostkyStatsView({ data: raw, playerIds, names, mode }: StatsViewProps) {
   const [moving, setMoving] = useState(false)
   const name = (id: string) => names.get(id) ?? '?'
   const legend = playerIds.map((id, i) => ({ name: name(id), color: seriesColor(i) }))
+
+  // Games never end; wins and per-game stats are per evening.
+  const data = useMemo(() => eveningStats(raw), [raw])
 
   const computed = useMemo(() => {
     const scores = scoresBySession(data)
@@ -73,7 +77,7 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard title="Výhry v čase" legend={legend}>
           {computed.wins.length === 0 ? (
-            <EmptyState>Zatím žádná dokončená hra</EmptyState>
+            <EmptyState>Zatím žádný dokončený večer</EmptyState>
           ) : (
             <ResponsiveContainer>
               <LineChart data={computed.wins} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
@@ -99,12 +103,12 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
         </ChartCard>
 
         <ChartCard
-          title="Průměr na hod v jednotlivých hrách"
+          title="Průměr na hod v jednotlivých večerech"
           legend={legend}
           actions={
             <label className="flex items-center gap-2 text-sm text-stone-600">
               <input type="checkbox" checked={moving} onChange={(e) => setMoving(e.target.checked)} />
-              Klouzavý průměr ({MOVING_WINDOW} her)
+              Klouzavý průměr ({MOVING_WINDOW} večerů)
             </label>
           }
         >
@@ -150,7 +154,7 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Součet za hru" legend={legend}>
+        <ChartCard title="Součet za večer" legend={legend}>
           <ResponsiveContainer>
             <BarChart data={computed.totals} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
               <CartesianGrid {...GRID_PROPS} />
@@ -183,14 +187,14 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
         <Card>
           <h3 className="mb-3 font-bold text-stone-800">Výhoda začínajícího hráče</h3>
           {computed.starter.games === 0 ? (
-            <EmptyState>Zatím žádná dokončená hra</EmptyState>
+            <EmptyState>Zatím žádný dokončený večer</EmptyState>
           ) : (
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-xl bg-stone-50 p-4">
                 <div className="text-sm text-stone-500">Začínající hráč vyhrál</div>
                 <div className="tabular text-3xl font-extrabold">{formatPercent(computed.starter.starterRate ?? 0)}</div>
                 <div className="text-sm text-stone-500">
-                  {computed.starter.starterWins} z {computed.starter.games} her
+                  {computed.starter.starterWins} z {computed.starter.games} večerů
                 </div>
               </div>
               <div className="rounded-xl bg-stone-50 p-4">
@@ -211,7 +215,7 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
               <thead className="bg-stone-50 text-xs uppercase text-stone-500">
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">Dvojice</th>
-                  <th className="px-3 py-2 text-right font-semibold">Her</th>
+                  <th className="px-3 py-2 text-right font-semibold">Večerů</th>
                   <th className="px-3 py-2 text-right font-semibold">Výhry : prohry</th>
                   <th className="px-3 py-2 text-right font-semibold">Stejně</th>
                 </tr>
@@ -237,7 +241,7 @@ export function KostkyStatsView({ data, playerIds, names, mode }: StatsViewProps
               </tbody>
             </table>
           </div>
-          <p className="mt-1 text-xs text-stone-500">Porovnání součtů ve společných hrách (jen dohraná kola).</p>
+          <p className="mt-1 text-xs text-stone-500">Porovnání součtů ve společných večerech (jen dohraná kola).</p>
         </section>
       )}
     </div>
@@ -254,7 +258,7 @@ function allOpponents(data: StatsViewProps['data'], playerId: string): string[] 
 
 function SummaryCard({ summary: s, name, color }: { summary: PlayerSummary; name: string; color: string }) {
   const rows: [string, string][] = [
-    ['Odehrané hry', formatNumber(s.sessionsPlayed)],
+    ['Odehrané večery', formatNumber(s.sessionsPlayed)],
     ['Remízy', formatNumber(s.ties)],
     ['Úspěšnost', s.winRate === null ? '–' : formatPercent(s.winRate)],
     ['Počet hodů', formatNumber(s.throws)],
@@ -262,7 +266,7 @@ function SummaryCard({ summary: s, name, color }: { summary: PlayerSummary; name
     ['Medián', s.median === null ? '–' : formatNumber(s.median)],
     ['Nejvyšší hod', s.best ? `${formatNumber(s.best.value)} (${formatDate(s.best.date)})` : '–'],
     ['Podíl nul', s.zeroShare === null ? '–' : formatPercent(s.zeroShare)],
-    ['Průměrný součet za hru', s.averageSessionTotal === null ? '–' : formatNumber(s.averageSessionTotal)],
+    ['Průměrný součet za večer', s.averageSessionTotal === null ? '–' : formatNumber(s.averageSessionTotal)],
     ['Nejlepší večer', s.bestSession ? `${formatNumber(s.bestSession.total)} (${formatDate(s.bestSession.date)})` : '–'],
     ['Nejdelší série nul', formatNumber(s.longestZeroStreak)],
     ['Nejdelší série vítězství', formatNumber(s.longestWinStreak)],
@@ -276,7 +280,7 @@ function SummaryCard({ summary: s, name, color }: { summary: PlayerSummary; name
         </h3>
         <div className="text-right">
           <div className="tabular text-3xl font-extrabold leading-none">{formatNumber(s.wins)}</div>
-          <div className="text-xs text-stone-500">Vyhrané hry</div>
+          <div className="text-xs text-stone-500">Vyhrané večery</div>
         </div>
       </div>
       <dl className="tabular grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">

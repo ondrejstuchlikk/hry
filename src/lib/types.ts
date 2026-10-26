@@ -85,12 +85,23 @@ export interface SessionWithPlayers extends Session {
   players: SessionPlayerRow[]
 }
 
+/** A turn-order draw; applies from round from_round until the next draw. */
+export interface Draw {
+  session_id: string
+  from_round: number
+  /** Turn order, first = starts. */
+  player_ids: string[]
+  drawn_at: string
+}
+
 export interface SessionDetail {
   session: Session
   gameType: GameType
-  /** Sorted by turn order. */
+  /** Sorted by the original turn order (stable column order). */
   players: SessionPlayer[]
   rounds: Round[]
   /** Sorted by seq. */
   entries: ScoredEntry[]
+  /** Sorted by from_round. */
+  draws: Draw[]
 }
