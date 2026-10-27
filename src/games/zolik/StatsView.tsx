@@ -354,8 +354,8 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
 type ProgressScope = 'partie' | 'game'
 
 /**
- * Running totals of one partie (picker, default = latest) or, in the group view, of the whole
- * endless game with dashed lines where a new partie starts.
+ * Running totals of the whole endless game (group view default) with dashed lines where a new
+ * partie starts, or of one partie (picker, default = latest; the only view in player mode).
  */
 function PartieProgressChart({
   partien,
@@ -370,7 +370,7 @@ function PartieProgressChart({
 }) {
   const theme = useChartTheme()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [scope, setScope] = useState<ProgressScope>('partie')
+  const [scope, setScope] = useState<ProgressScope>('game')
   const whole = mode === 'group' && scope === 'game'
   const partie = partien.find((p) => p.id === selectedId) ?? partien[partien.length - 1]
   // Group view keeps the page's colors; player view shows everyone of that partie, selected player first.
@@ -410,8 +410,8 @@ function PartieProgressChart({
             <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-0.5 text-sm" role="tablist">
               {(
                 [
-                  ['partie', 'Partie'],
                   ['game', 'Celá hra'],
+                  ['partie', 'Partie'],
                 ] as const
               ).map(([value, text]) => (
                 <button

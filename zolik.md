@@ -97,13 +97,20 @@ Sequence: **1) winner → 2) jokers → 3) losers' points.**
 
 No keyboard shortcuts are required beyond Enter/Tab/focus handling.
 
-### Scoreboard during a partie
+### Score table (next to the entry panel)
+
+- One big table, rows = players, two column groups:
+  - „Dnešní partie“: „Body“ and „Kola“ (hands won) of the partie in progress; „–“ when no partie is in progress. 👑 next to the name marks the partie leader (**lowest** total).
+  - „Celá hra“: „Body“, „Kola“ (hands won) and „Partie“ (finished partie won) over the whole endless game; the lowest total is highlighted.
+- Large type on both phone and laptop; it is the main thing players look at between hands.
+
+### „Tabulka kol“ (bottom of the game page)
 
 - Table with columns = players and rows = hands („Kolo 1“, „Kolo 2“, …, numbered within the partie), newest on top on mobile.
 - Each row shows the points; mark the winner (e.g. ★ and „0“) and the dealer (small icon/label).
 - Show a joker icon with the count when `jokers_kept > 0`.
 - Totals row; highlight the current leader, which is the **lowest** total.
-- Small live info: number of hands won in this partie per player.
+- Placed below the statistics: it is a detail, not needed during play.
 
 ### Ending a partie
 
@@ -112,6 +119,13 @@ No keyboard shortcuts are required beyond Enter/Tab/focus handling.
 - **Winner of the partie = lowest total.** Ties → all tied players win. A partie with zero hands has no winner.
   - Make the existing winner logic generic via `game_types.scoring`, if it isn't already.
 - Summary card „Poslední partie“ on the game page: „Vítěz partie: <jméno>“, totals, number of hands won per player, worst loss of the evening.
+
+### Game page layout (top to bottom)
+
+1. Entry panel + score table (side by side on laptop, stacked on phone)
+2. „Poslední partie“ card
+3. „Statistiky“: progress chart, summary table, other charts
+4. „Tabulka kol“
 
 ## Statistics (Žolík)
 
@@ -128,7 +142,7 @@ Same scoping as Kostky: default per group on „Statistiky“, overall per playe
 **Charts / tables:**
 - Cumulative partie wins over time per player (line)
 - Average points per hand per partie over time (line)
-- Progression of totals within a selected partie (line, x = hand number) — partie picker, default = latest
+- „Průběh celé hry“ / „Průběh partie“ (line, x = hand number), shown **above** the summary table. Switch „Celá hra“ (default; running totals over the whole endless game, dashed line where each partie starts) / „Partie“ (one partie, picker, default = latest). „Celkové statistiky“ only has the partie view.
 - Distribution of losing values (histogram; buckets as constants, e.g. 1–10, 11–25, 26–50, 51–100, 101–200, >200)
 - **Dealer advantage:** win rate of the dealer vs. non-dealers, and per player „Vyhrává, když rozdává“ vs. „Vyhrává, když nerozdává“. Show the expected baseline 1/n for comparison.
 - **Jokers:**

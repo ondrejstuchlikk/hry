@@ -22,6 +22,7 @@ import {
   partieTotals,
   partieWinners,
   saveStoredDealer,
+  splitPartie,
   storedDealerValid,
   validateLoserValue,
   worstLoss,
@@ -436,15 +437,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
     current.length === 0 && lastHand?.endsPartie && now - Date.parse(lastHand.createdAt) < PARTIE_BREAK_MS
   const stats = useGameStats(detail, rounds, entries)
 
-  const side = (
-    <div className="space-y-4">
-      <PartieInfo players={players} hands={current} />
-      <section>
-        <SectionTitle>Tabulka kol</SectionTitle>
-        <ZolikScoreboard players={players} hands={current} newestFirst={!isDesktop} />
-      </section>
-    </div>
-  )
+  const side = <ScoreSummary players={players} hands={hands} current={current} />
 
   return (
     <div className="space-y-4">
@@ -487,6 +480,11 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
             <ZolikCharts data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
           </Suspense>
         )}
+      </section>
+
+      <section>
+        <SectionTitle>Tabulka kol</SectionTitle>
+        <ZolikScoreboard players={players} hands={current} newestFirst={!isDesktop} />
       </section>
 
       <JokersDialog
@@ -679,36 +677,88 @@ function JokersDialog({
   )
 }
 
-/** Live info of the partie in progress: totals and hands won. */
-function PartieInfo({ players, hands }: { players: SessionPlayer[]; hands: ZolikHand[] }) {
+/**
+ * Big score table: the partie in progress (points, hands won) next to the whole endless game
+ * (points, hands won, partie won). 👑 marks the partie leader, the lowest game total is highlighted.
+ */
+function ScoreSummary({
+  players,
+  hands,
+  current,
+}: {
+  players: SessionPlayer[]
+  hands: ZolikHand[]
+  current: ZolikHand[]
+}) {
   const ids = players.map((p) => p.id)
-  const totals = partieTotals(ids, hands)
-  const won = handsWon(ids, hands)
-  const leaders = new Set(partieWinners(ids, hands))
+  const partieTotal = partieTotals(ids, current)
+  const partieWon = handsWon(ids, current)
+  const partieLeaders = new Set(partieWinners(ids, current))
+  const gameTotal = partieTotals(ids, hands)
+  const gameWon = handsWon(ids, hands)
+  const gameLeaders = new Set(partieWinners(ids, hands))
+  // Only finished partie have a winner; the one in progress is the last split.
+  const finished = splitPartie(hands).slice(0, current.length > 0 ? -1 : undefined)
+  const partieWins = new Map(ids.map((id) => [id, 0]))
+  for (const partie of finished) {
+    for (const id of partieWinners(ids, partie)) partieWins.set(id, partieWins.get(id)! + 1)
+  }
+  const live = current.length > 0
+  const dash = <span className="text-stone-400">–</span>
+
+  const group = 'px-2 pt-3 text-center text-xs font-semibold uppercase tracking-wide sm:px-4 sm:text-sm'
+  const sub = 'px-2 pb-2 pt-1 text-[11px] font-semibold uppercase text-stone-500 sm:px-4 sm:text-xs'
+  const cell = 'px-2 py-3 sm:px-4 sm:py-4'
+
   return (
-    <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-stone-200">
-      <table className="tabular w-full text-right text-sm">
-        <thead className="text-xs uppercase text-stone-500">
+    <section className="overflow-x-auto rounded-2xl bg-surface shadow-sm ring-1 ring-stone-200">
+      <table className="tabular w-full text-right">
+        <thead>
           <tr>
-            <th className="px-3 pt-2 text-left font-semibold">Dnešní partie</th>
-            <th className="px-3 pt-2 font-semibold">Body</th>
-            <th className="px-3 pt-2 font-semibold">Vyhraná kola</th>
+            <th rowSpan={2} className="px-3 pb-2 pt-3 text-left align-bottom text-xs font-semibold uppercase text-stone-500 sm:px-4 sm:text-sm">
+              Hráč
+            </th>
+            <th colSpan={2} className={`${group} text-accent`}>
+              Dnešní partie
+            </th>
+            <th colSpan={3} className={`${group} border-l border-stone-200 text-stone-600`}>
+              Celá hra
+            </th>
+          </tr>
+          <tr>
+            <th className={sub}>Body</th>
+            <th className={sub}>Kola</th>
+            <th className={`${sub} border-l border-stone-200`}>Body</th>
+            <th className={sub}>Kola</th>
+            <th className={sub}>Partie</th>
           </tr>
         </thead>
         <tbody>
           {players.map((p) => (
             <tr key={p.id} className="border-t border-stone-100">
-              <td className="px-3 py-1.5 text-left font-medium">
-                {leaders.has(p.id) && <span aria-label="vede">👑 </span>}
+              <td className="px-3 py-3 text-left text-lg font-bold sm:px-4 sm:py-4 sm:text-2xl">
+                {live && partieLeaders.has(p.id) && <span aria-label="vede partii">👑 </span>}
                 {p.name}
               </td>
-              <td className="px-3 py-1.5 font-semibold">{formatNumber(totals.get(p.id) ?? 0)}</td>
-              <td className="px-3 py-1.5">{won.get(p.id) ?? 0}</td>
+              <td className={`${cell} text-2xl font-extrabold sm:text-4xl`}>
+                {live ? formatNumber(partieTotal.get(p.id) ?? 0) : dash}
+              </td>
+              <td className={`${cell} text-lg font-semibold sm:text-2xl`}>{live ? (partieWon.get(p.id) ?? 0) : dash}</td>
+              <td
+                className={`${cell} border-l border-stone-200 text-xl font-bold sm:text-3xl ${hands.length > 0 && gameLeaders.has(p.id) ? 'text-accent' : ''}`}
+              >
+                {formatNumber(gameTotal.get(p.id) ?? 0)}
+              </td>
+              <td className={`${cell} text-base sm:text-xl`}>{gameWon.get(p.id) ?? 0}</td>
+              <td className={`${cell} text-base sm:text-xl`}>{partieWins.get(p.id) ?? 0}</td>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+      <p className="border-t border-stone-100 px-3 py-2 text-xs text-stone-500 sm:px-4">
+        Kola = vyhraná kola, Partie = vyhrané partie. Méně bodů je lépe.
+      </p>
+    </section>
   )
 }
 

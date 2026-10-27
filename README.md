@@ -59,11 +59,13 @@ score table; „Celkové statistiky“ compares players across all games.
 src/lib/          Supabase client, auth (username ↔ email), API calls, formatting
 src/games/        GameModule interface (types.ts) + registry (index.ts)
 src/games/kostky/ Kostky: turn/winner logic, session screen, result, statistics
+src/games/zolik/  Žolík: hand recording, partie, score table, statistics (spec: zolik.md)
 src/pages/        Login, Games, Session, Stats, OverallStats
 src/components/   Shared UI (Dialog, NewSessionDialog, charts, …)
 supabase/         SQL migrations, seed, optional pg_cron job
 ```
 
-Adding a game (e.g. Žolík): create `src/games/zolik/` implementing `GameModule` and register it in
-`src/games/index.ts`. The database already supports it (`game_types.scoring`/`config.round_complete`,
-`rounds.winner_player_id`, entries not required for every player).
+Adding another game: create `src/games/<id>/` implementing `GameModule` and register it in
+`src/games/index.ts` (see `src/games/zolik/` for a game with its own entry flow).
+
+Changes are listed in [CHANGELOG.md](CHANGELOG.md).
