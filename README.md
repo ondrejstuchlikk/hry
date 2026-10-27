@@ -13,7 +13,8 @@ React + Vite + TypeScript, Tailwind, Recharts, Supabase; hosted on GitHub Pages.
    2. `supabase/migrations/002_functions.sql`
    3. `supabase/migrations/003_rls.sql`
    4. `supabase/migrations/004_endless_games.sql`
-   5. `supabase/seed.sql`
+   5. `supabase/migrations/005_zolik.sql`
+   6. `supabase/seed.sql`
 3. **Authentication → Sign In / Providers → Email**: turn **off „Confirm email“**.
    (Users sign in with a username; the app maps it to a synthetic email `<username>@ondrejstuchlikk.github.io`
    — see `AUTH_EMAIL_DOMAIN` in `src/lib/auth.ts`. No mail is ever sent. If signup fails with an
