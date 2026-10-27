@@ -314,7 +314,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
       <div className="mb-3 flex items-start justify-between gap-3">
         <DealerBanner players={players} dealer={dealer} />
         <span className="shrink-0 rounded-full bg-stone-100 px-3 py-1 text-sm font-bold text-stone-600 sm:text-base">
-          Hra {handNo}
+          Kolo {handNo}
         </span>
       </div>
 
@@ -323,7 +323,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
           className="mb-3 rounded-xl border-2 border-amber-700 bg-amber-50 px-3 py-2 text-lg font-bold text-amber-800"
           role="status"
         >
-          🃏 {name(reminder.playerId)} má z minulé hry {jokersPhrase(reminder.count)}
+          🃏 {name(reminder.playerId)} má z minulého kola {jokersPhrase(reminder.count)}
         </p>
       )}
 
@@ -336,7 +336,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
         >
           <p className="text-sm text-stone-600">
             Vyhrál/a: <strong className="text-stone-900">{name(winnerId)}</strong>
-            {jokers > 0 && <> · žolíky do další hry: <strong className="text-stone-900">{jokers}</strong></>}
+            {jokers > 0 && <> · žolíky do dalšího kola: <strong className="text-stone-900">{jokers}</strong></>}
           </p>
           {losers.map((p, i) => (
             <div key={p.id}>
@@ -439,7 +439,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
     <div className="space-y-4">
       <PartieInfo players={players} hands={current} />
       <section>
-        <SectionTitle>Tabulka her</SectionTitle>
+        <SectionTitle>Tabulka kol</SectionTitle>
         <ZolikScoreboard players={players} hands={current} newestFirst={!isDesktop} />
       </section>
     </div>
@@ -540,7 +540,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
       </Dialog>
 
       <Dialog open={ask === 'delete'} onClose={() => setAsk(null)} onEnter={deleteLast}>
-        <p className="mb-5 text-xl font-semibold">Smazat poslední hru?</p>
+        <p className="mb-5 text-xl font-semibold">Smazat poslední kolo?</p>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" size="lg" onClick={() => setAsk(null)}>
             Zrušit
@@ -552,7 +552,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
       </Dialog>
 
       <Dialog open={ask === 'end'} onClose={() => setAsk(null)} onEnter={() => markPartieEnd(true)}>
-        <p className="mb-5 text-xl font-semibold">Rozehraná hra se neuloží. Ukončit?</p>
+        <p className="mb-5 text-xl font-semibold">Rozehrané kolo se neuloží. Ukončit?</p>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" size="lg" onClick={() => setAsk(null)}>
             Zpět
@@ -639,7 +639,7 @@ function JokersDialog({
   }, [open, value, onChange])
 
   return (
-    <Dialog open={open} title="Počet žolíků do další hry" onClose={onBack} onEnter={onOk}>
+    <Dialog open={open} title="Počet žolíků do dalšího kola" onClose={onBack} onEnter={onOk}>
       <div className="flex items-center justify-center gap-4">
         <Button
           variant="secondary"
@@ -690,7 +690,7 @@ function PartieInfo({ players, hands }: { players: SessionPlayer[]; hands: Zolik
           <tr>
             <th className="px-3 pt-2 text-left font-semibold">Dnešní partie</th>
             <th className="px-3 pt-2 font-semibold">Body</th>
-            <th className="px-3 pt-2 font-semibold">Vyhrané hry</th>
+            <th className="px-3 pt-2 font-semibold">Vyhraná kola</th>
           </tr>
         </thead>
         <tbody>
@@ -745,7 +745,7 @@ function LastPartieCard({
           <tr>
             <th className="py-1 text-left font-semibold">Hráč</th>
             <th className="py-1 font-semibold">Body</th>
-            <th className="py-1 font-semibold">Vyhrané hry</th>
+            <th className="py-1 font-semibold">Vyhraná kola</th>
           </tr>
         </thead>
         <tbody>
@@ -765,7 +765,7 @@ function LastPartieCard({
       </table>
       {worst && (
         <p className="mt-3 text-sm text-stone-600">
-          Nejhorší prohra večera: <strong className="text-stone-900">{formatNumber(worst.value)}</strong> ({name(worst.playerId)})
+          Nejhorší prohra partie: <strong className="text-stone-900">{formatNumber(worst.value)}</strong> ({name(worst.playerId)})
         </p>
       )}
     </section>

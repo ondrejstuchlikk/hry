@@ -8,12 +8,6 @@ const KostkyStatsView = lazy(() => import('./StatsView').then((m) => ({ default:
 
 export const kostkyModule: GameModule = {
   id: 'kostky',
-  labels: {
-    newSession: 'Nová hra',
-    startSession: 'Začít hru',
-    mySessions: 'Moje hry',
-    noSessions: 'Zatím žádné hry – začni tlačítkem „Nová hra“',
-  },
   SessionScreen: KostkySessionScreen,
   StatsView: KostkyStatsView,
   ComparisonTable,

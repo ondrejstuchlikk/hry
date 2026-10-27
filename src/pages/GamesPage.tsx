@@ -43,7 +43,6 @@ export function GamesPage() {
   }, [load])
 
   const gameType = gameTypes?.find((g) => g.id === gameTypeId)
-  const labels = (gameModules[gameTypeId] ?? gameModules[DEFAULT_GAME_TYPE]).labels
   const playerNames = (s: SessionWithPlayers) => joinNames(s.players.map((p) => names.get(p.player_id) ?? '?'))
 
   return (
@@ -84,16 +83,16 @@ export function GamesPage() {
       )}
 
       <Button size="lg" className="w-full sm:w-auto" disabled={!gameType} onClick={() => setDialogOpen(true)}>
-        + {labels.newSession}
+        + Nová hra
       </Button>
 
       <section>
-        <SectionTitle>{labels.mySessions}</SectionTitle>
+        <SectionTitle>Moje hry</SectionTitle>
         {sessions === null ? (
           <Spinner />
         ) : sessions.length === 0 ? (
           <Card>
-            <EmptyState>{labels.noSessions}</EmptyState>
+            <EmptyState>Zatím žádné hry – začni tlačítkem „Nová hra“</EmptyState>
           </Card>
         ) : (
           <ul className="space-y-2">
@@ -117,7 +116,6 @@ export function GamesPage() {
       {gameType && (
         <NewSessionDialog
           gameType={gameType}
-          labels={labels}
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           onCreated={(id) => {

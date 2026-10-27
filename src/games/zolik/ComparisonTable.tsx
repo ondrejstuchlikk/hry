@@ -23,11 +23,11 @@ export function ComparisonTable({ data, playerIds, names }: ComparisonTableProps
             <th className="px-3 py-2 font-semibold">Výhry</th>
             <th className="px-3 py-2 font-semibold">Remízy</th>
             <th className="px-3 py-2 font-semibold">Úspěšnost</th>
-            <th className="px-3 py-2 font-semibold">Hry</th>
-            <th className="px-3 py-2 font-semibold">Vyhrané hry</th>
-            <th className="px-3 py-2 font-semibold">Úspěšnost her</th>
+            <th className="px-3 py-2 font-semibold">Kola</th>
+            <th className="px-3 py-2 font-semibold">Vyhraná kola</th>
+            <th className="px-3 py-2 font-semibold">Úspěšnost kol</th>
             <th className="px-3 py-2 font-semibold">Ø při prohře</th>
-            <th className="px-3 py-2 font-semibold">Ø na hru</th>
+            <th className="px-3 py-2 font-semibold">Ø na kolo</th>
             <th className="px-3 py-2 font-semibold">Nejhorší prohra</th>
           </tr>
         </thead>

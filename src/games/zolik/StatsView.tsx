@@ -108,11 +108,11 @@ const SUMMARY_ROWS: SummaryRow[] = [
   { label: 'Remízy', value: (s) => s.partieTies, format: (s) => num(s.partieTies) },
   { label: 'Úspěšnost partií', value: (s) => s.partieWinRate, format: (s) => pct(s.partieWinRate), better: 'high' },
   { label: 'Odehrané partie', value: (s) => s.partiePlayed, format: (s) => num(s.partiePlayed) },
-  { label: 'Vyhrané hry', value: (s) => s.handsWon, format: (s) => num(s.handsWon), better: 'high' },
-  { label: 'Odehrané hry', value: (s) => s.hands, format: (s) => num(s.hands) },
-  { label: 'Úspěšnost her', value: (s) => s.handWinRate, format: (s) => pct(s.handWinRate), better: 'high' },
+  { label: 'Vyhraná kola', value: (s) => s.handsWon, format: (s) => num(s.handsWon), better: 'high' },
+  { label: 'Odehraná kola', value: (s) => s.hands, format: (s) => num(s.hands) },
+  { label: 'Úspěšnost kol', value: (s) => s.handWinRate, format: (s) => pct(s.handWinRate), better: 'high' },
   { label: 'Průměr bodů při prohře', value: (s) => s.averageLoss, format: (s) => n(s.averageLoss), better: 'low' },
-  { label: 'Průměr bodů na hru', value: (s) => s.averagePerHand, format: (s) => n(s.averagePerHand), better: 'low' },
+  { label: 'Průměr bodů na kolo', value: (s) => s.averagePerHand, format: (s) => n(s.averagePerHand), better: 'low' },
   {
     label: 'Nejhorší prohra',
     value: (s) => s.worstLoss?.value ?? null,
@@ -135,7 +135,7 @@ const SUMMARY_ROWS: SummaryRow[] = [
     better: 'low',
   },
   {
-    label: 'Nejdelší série vyhraných her',
+    label: 'Nejdelší série vyhraných kol',
     value: (s) => s.longestHandWinStreak,
     format: (s) => num(s.longestHandWinStreak),
     better: 'high',
@@ -256,7 +256,7 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
       )}
 
       {stats.averages.length >= 2 && (
-        <ChartCard title="Průměr bodů na hru po partiích" subtitle="Méně je lépe" legend={legend}>
+        <ChartCard title="Průměr bodů na kolo po partiích" subtitle="Méně je lépe" legend={legend}>
           <ResponsiveContainer>
             <LineChart data={stats.averages} margin={{ top: 6, right: 6, bottom: 0, left: -10 }}>
               <CartesianGrid {...gridProps(theme)} />
@@ -372,7 +372,7 @@ function PartieProgressChart({
   return (
     <ChartCard
       title="Průběh partie"
-      subtitle="Body celkem po jednotlivých hrách"
+      subtitle="Body celkem po jednotlivých kolech"
       legend={ids.map((id, i) => ({ name: name(id), color: theme.series(i) }))}
       height="h-64 sm:h-72"
       className="lg:col-span-2"
@@ -399,7 +399,7 @@ function PartieProgressChart({
           <Tooltip
             cursor={{ stroke: theme.reference, strokeWidth: 1 }}
             content={(p) => (
-              <ChartTooltip {...p} formatLabel={(l) => (l === 0 ? 'Začátek' : `Hra ${l}`)} formatValue={num} />
+              <ChartTooltip {...p} formatLabel={(l) => (l === 0 ? 'Začátek' : `Kolo ${l}`)} formatValue={num} />
             )}
           />
           {ids.map((id, i) => (
@@ -436,11 +436,11 @@ function DealerCard({ stats, playerIds, name }: { stats: Stats; playerIds: strin
     <Card className="p-4!">
       <h3 className="mb-2 font-bold text-stone-800">Výhoda rozdávajícího</h3>
       {d.hands === 0 ? (
-        <EmptyState>Zatím žádná odehraná hra</EmptyState>
+        <EmptyState>Zatím žádné odehrané kolo</EmptyState>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-2">
-            <Stat label="Rozdávající vyhrál" value={pct(d.dealerRate)} note={`${d.dealerWins} z ${d.hands} her`} />
+            <Stat label="Rozdávající vyhrál" value={pct(d.dealerRate)} note={`${d.dealerWins} z ${d.hands} kol`} />
             <Stat label="Ostatní hráči" value={pct(d.othersRate)} note="výher na hráče" />
             <Stat label="Očekáváno" value={pct(d.baseline)} note="1 / počet hráčů" />
           </div>
@@ -487,7 +487,7 @@ function JokersCard({ stats, playerIds, name }: { stats: Stats; playerIds: strin
     <Card className="p-4!">
       <h3 className="mb-2 font-bold text-stone-800">Ponechané žolíky</h3>
       {!any ? (
-        <EmptyState>Zatím žádná odehraná hra</EmptyState>
+        <EmptyState>Zatím žádné odehrané kolo</EmptyState>
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -530,7 +530,7 @@ function JokersCard({ stats, playerIds, name }: { stats: Stats; playerIds: strin
             </table>
           </div>
           <p className="mt-2 text-xs text-stone-500">
-            „Výhry hned potom“ = úspěšnost ve hře následující po té, kde si hráč nechal aspoň 1 žolíka (počítá se i přes
+            „Výhry hned potom“ = úspěšnost v kole následujícím po tom, kde si hráč nechal aspoň 1 žolíka (počítá se i přes
             hranici partie).
           </p>
         </>

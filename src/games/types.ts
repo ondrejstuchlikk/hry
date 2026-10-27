@@ -30,17 +30,6 @@ export interface ComparisonTableProps {
  */
 export interface GameModule {
   id: string
-  /** Game-specific wording on the games page and in the new-session dialog. */
-  labels: {
-    /** „Nová hra“ */
-    newSession: string
-    /** „Začít hru“ */
-    startSession: string
-    /** „Moje hry“ */
-    mySessions: string
-    /** Empty „Moje hry“ list. */
-    noSessions: string
-  }
   /** Statistics need the rounds (loadStatsData withRounds). */
   statsWithRounds?: boolean
   /** Scoring screen of an (endless) session, incl. its statistics. */

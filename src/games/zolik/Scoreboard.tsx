@@ -4,7 +4,7 @@ import type { SessionPlayer } from '../../lib/types'
 import { partieTotals, partieWinners, type ZolikHand } from './logic'
 
 /**
- * Players as columns, hands of one partie as rows („Hra 1“, …), totals in a sticky footer.
+ * Players as columns, hands of one partie as rows („Kolo 1“, …), totals in a sticky footer.
  * The hand winner gets ★ (and 🃏 with the jokers kept), the dealer a small „R“.
  * The leader (lowest total) is highlighted.
  */
@@ -30,7 +30,7 @@ export function ZolikScoreboard({
   }, [hands.length, newestFirst])
 
   if (hands.length === 0) {
-    return <p className="rounded-2xl bg-surface py-6 text-center text-stone-500 ring-1 ring-stone-200">Zatím žádná hra v této partii</p>
+    return <p className="rounded-2xl bg-surface py-6 text-center text-stone-500 ring-1 ring-stone-200">Zatím žádné kolo v této partii</p>
   }
 
   return (
@@ -39,7 +39,7 @@ export function ZolikScoreboard({
         <thead className="sticky top-0 z-10 bg-stone-50">
           <tr>
             <th className="border-b border-stone-200 px-3 py-2 text-left text-xs font-semibold uppercase text-stone-500">
-              Hra
+              Kolo
             </th>
             {players.map((p) => (
               <th
@@ -72,7 +72,7 @@ export function ZolikScoreboard({
                         </span>
                       )}
                       {won && hand.jokersKept > 0 && (
-                        <span className="text-xs text-stone-600" title="žolíky do další hry">
+                        <span className="text-xs text-stone-600" title="žolíky do dalšího kola">
                           🃏{hand.jokersKept}
                         </span>
                       )}

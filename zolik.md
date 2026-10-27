@@ -18,13 +18,13 @@ Implement Žolík as a new module `src/games/zolik/` implementing the common `Ga
 
 | Concept | Czech UI term | DB entity |
 |---|---|---|
-| one hand | „hra“ (e.g. „Hra 7“) | `rounds` |
-| one evening / day / session | „partie“ | `sessions` |
+| one hand | „kolo“ (e.g. „Kolo 7“) | `rounds` |
+| one evening (part of the endless game) | „partie“ | derived from `rounds` (1 h pause or `ends_partie`) |
 | hand winner | „výherce“ | `rounds.winner_player_id` |
 | dealer | „rozdává“ | `rounds.dealer_player_id` |
-| jokers kept for next hand | „žolíky do další hry“ | `rounds.jokers_kept` |
+| jokers kept for next hand | „žolíky do dalšího kola“ | `rounds.jokers_kept` |
 
-Within all Žolík screens use „partie“ for the session: „Nová partie“, „Pokračovat v partii“, „Vítěz partie“. Keep the existing button „Pro dnešek konec“ to end a partie. Do not rename anything in Kostky.
+Like Kostky, a Žolík **game** („hra“) is endless and defined by the game type + the set of players; it is created with „Nová hra“ / „Začít hru“ and listed under „Moje hry“. Inside a game, rounds are grouped into **partie** (one evening each): a partie ends with „Pro dnešek konec“ (sets `rounds.ends_partie` on its last round) or after a pause of ≥ 1 h, and the next recorded round automatically starts a new partie. „Pokračovat v partii“ reopens a partie ended by mistake (within 1 h). Use „Vítěz partie“ for the partie result. Do not rename anything in Kostky.
 
 ## Database changes
 
@@ -61,13 +61,13 @@ Also add `zolik` to `supabase/seed.sql`.
 
 ### Starting a partie
 
-Same as Kostky „Nová hra“, but the button is „Nová partie“. Select players by username or guests (min. 2), then „Začít partii“. Turn order is not relevant for Žolík. Store a random order anyway for display.
+Same as Kostky: „Nová hra“, select players by username or guests (min. 2), then „Začít hru“ (opens the existing game of the same players). Turn order is not relevant for Žolík. Store a random order anyway for display.
 
 ### Before each hand
 
 1. Randomly draw the dealer with a short animation and show it big: „Rozdává: <jméno>“.
 2. **Joker reminder.** If the most recent completed hand of the **same group** (`group_key`) had `jokers_kept > 0`, show a clearly visible notice:
-   - „<jméno> má z minulé hry 1 žolíka“
+   - „<jméno> má z minulého kola 1 žolíka“
    - Use the correct Czech plural: 1 žolíka, 2–4 žolíky.
 
    This must work **across partie boundaries**: if the last hand of the group was played last week in a previous partie, the reminder still appears at the start of the first hand of the new partie. This is the main purpose of the reminder. Once the next hand is recorded, the reminder is gone (it then reflects that hand's `jokers_kept`).
@@ -77,7 +77,7 @@ Same as Kostky „Nová hra“, but the button is „Nová partie“. Select pla
 Sequence: **1) winner → 2) jokers → 3) losers' points.**
 
 1. **Výběr výherce.** Header „Kdo vyhrál?“ with one large button per player (big touch targets; on mobile a full-width stack). A single click selects the winner.
-2. **Jokers dialog** opens immediately: title „Počet žolíků do další hry“.
+2. **Jokers dialog** opens immediately: title „Počet žolíků do dalšího kola“.
    - Large number display, default **0**.
    - Big buttons „−“ and „+“, clamped to 0–4.
    - Button „OK“ (primary, focused by default, so Enter confirms 0).
@@ -93,13 +93,13 @@ Sequence: **1) winner → 2) jokers → 3) losers' points.**
 
 **„Zpět“ (undo):**
 - While entering a hand, it steps back one step (points → jokers → winner).
-- On an empty, fresh hand, it offers „Smazat poslední hru?“. On confirmation it deletes the last saved hand (round + entries).
+- On an empty, fresh hand, it offers „Smazat poslední kolo?“. On confirmation it deletes the last saved hand (round + entries).
 
 No keyboard shortcuts are required beyond Enter/Tab/focus handling.
 
 ### Scoreboard during a partie
 
-- Table with columns = players and rows = hands („Hra 1“, „Hra 2“, …), newest on top on mobile.
+- Table with columns = players and rows = hands („Kolo 1“, „Kolo 2“, …, numbered within the partie), newest on top on mobile.
 - Each row shows the points; mark the winner (e.g. ★ and „0“) and the dealer (small icon/label).
 - Show a joker icon with the count when `jokers_kept > 0`.
 - Totals row; highlight the current leader, which is the **lowest** total.
@@ -108,10 +108,10 @@ No keyboard shortcuts are required beyond Enter/Tab/focus handling.
 ### Ending a partie
 
 - „Pro dnešek konec“ ends the partie manually. As with Kostky, it also ends automatically after 1 h of inactivity (existing `close_stale_sessions()`).
-- Since hands are saved only when complete, there is no incomplete-round dialog for Žolík. If a hand is partially entered, ask „Rozehraná hra se neuloží. Ukončit?“ with buttons „Ukončit“ / „Zpět“.
+- Since hands are saved only when complete, there is no incomplete-round dialog for Žolík. If a hand is partially entered, ask „Rozehrané kolo se neuloží. Ukončit?“ with buttons „Ukončit“ / „Zpět“.
 - **Winner of the partie = lowest total.** Ties → all tied players win. A partie with zero hands has no winner.
   - Make the existing winner logic generic via `game_types.scoring`, if it isn't already.
-- Summary screen: „Vítěz partie: <jméno>“, totals, number of hands won per player, worst loss of the evening.
+- Summary card „Poslední partie“ on the game page: „Vítěz partie: <jméno>“, totals, number of hands won per player, worst loss of the evening.
 
 ## Statistics (Žolík)
 
@@ -119,9 +119,9 @@ Same scoping as Kostky: default per group on „Statistiky“, overall per playe
 
 **Summary cards (per player):**
 - „Vyhrané partie“ (plus „Remízy“, win rate %), „Odehrané partie“
-- „Vyhrané hry“, „Odehrané hry“, win rate of hands %
+- „Vyhraná kola“, „Odehraná kola“, win rate of hands %
 - „Průměr bodů při prohře“ (mean of entries with value ≥ 1)
-- „Průměr bodů na hru“ (including 0 for wins)
+- „Průměr bodů na kolo“ (including 0 for wins)
 - „Nejhorší prohra“ (max single value, with date)
 - „Nejlepší partie“ (lowest partie total, with date), „Nejhorší partie“
 
@@ -136,7 +136,7 @@ Same scoping as Kostky: default per group on „Statistiky“, overall per playe
   - win rate of the hand *following* a hand where the player kept ≥ 1 joker, vs. their overall hand win rate
   - joker carry-overs count across partie boundaries too: use the previous hand in the same group
 - Head-to-head table in group view (partie wins of each player vs. each other)
-- Streaks: „Nejdelší série vyhraných her“, „Nejdelší série vyhraných partií“
+- Streaks: „Nejdelší série vyhraných kol“, „Nejdelší série vyhraných partií“
 
 Formatting as in `CLAUDE.md` (cs-CZ numbers, dates `d. M. yyyy`, Czech empty states).
 
@@ -153,7 +153,7 @@ Formatting as in `CLAUDE.md` (cs-CZ numbers, dates `d. M. yyyy`, Czech empty sta
 ## Working order
 
 1. Migration + seed + RPC `record_zolik_hand`
-2. Žolík module skeleton + „Nová partie“
+2. Žolík module skeleton + „Nová hra“
 3. Hand recording flow (winner → jokers → points), dealer draw, joker reminder
 4. Scoreboard + ending a partie + generic winner logic
 5. Statistics
