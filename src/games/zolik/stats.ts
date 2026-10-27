@@ -192,12 +192,17 @@ export function averagePerPartie(partien: Partie[], playerIds: string[]): Series
 
 /** Running totals within one partie (x = hand number, 0 = start). */
 export function partieProgress(partie: Partie, playerIds: string[]): SeriesRow[] {
+  return handsProgress(partie.hands, playerIds)
+}
+
+/** Running totals after each hand; row 0 is the start. `date` is the hand's time. */
+export function handsProgress(hands: ZolikHand[], playerIds: string[]): SeriesRow[] {
   const totals = new Map(playerIds.map((id) => [id, 0]))
-  const start: SeriesRow = { key: '0', label: '0', hand: 0 }
+  const start: SeriesRow = { key: '0', label: '0', hand: 0, date: null }
   for (const id of playerIds) start[id] = 0
   const rows = [start]
-  partie.hands.forEach((h, i) => {
-    const row: SeriesRow = { key: String(i + 1), label: String(i + 1), hand: i + 1 }
+  hands.forEach((h, i) => {
+    const row: SeriesRow = { key: String(i + 1), label: String(i + 1), hand: i + 1, date: h.createdAt }
     for (const id of playerIds) {
       if (h.values[id] !== undefined) totals.set(id, totals.get(id)! + h.values[id])
       row[id] = totals.get(id)!

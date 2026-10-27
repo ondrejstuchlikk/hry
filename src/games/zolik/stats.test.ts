@@ -5,6 +5,7 @@ import {
   buildPartien,
   dealerAdvantage,
   handsByGroup,
+  handsProgress,
   headToHead,
   jokerStats,
   lossBucketIndex,
@@ -101,6 +102,14 @@ describe('partie', () => {
       [5, 25],
       [5, 40],
     ])
+  })
+
+  it('tracks running totals across the whole game', () => {
+    const rows = handsProgress(buildPartien(sample, NOW).flatMap((p) => p.hands), ['a', 'b'])
+    expect(rows).toHaveLength(8)
+    expect([rows[7].a, rows[7].b]).toEqual([45, 53])
+    expect(rows[0].date).toBeNull()
+    expect(rows[4].date).toBe(new Date(T0 + DAY * 60_000).toISOString())
   })
 })
 

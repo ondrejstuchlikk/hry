@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,6 +25,7 @@ import {
   headToHead,
   jokerStats,
   lossHistogram,
+  handsProgress,
   partieProgress,
   playerSummary,
   type Partie,
@@ -69,10 +71,18 @@ export function ZolikStatsView(props: StatsViewProps) {
   if (stats.partien.length === 0) return <NoGames />
   return (
     <div className="space-y-4">
+      <PartieProgressChart partien={stats.partien} {...props} />
       <SummaryTable stats={stats} {...props} />
       <Charts stats={stats} {...props} />
     </div>
   )
+}
+
+/** Just the running-totals chart (game page, above the summary). */
+export function ZolikProgress(props: StatsViewProps) {
+  const stats = useStats(props)
+  if (stats.partien.length === 0) return null
+  return <PartieProgressChart partien={stats.partien} {...props} />
 }
 
 /** Just the summary table (game page). */
@@ -225,8 +235,6 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <PartieProgressChart partien={stats.partien} playerIds={playerIds} names={names} mode={mode} />
-
       {finished >= 2 && (
         <ChartCard title="Výhry v čase" subtitle="Vyhrané partie celkem" legend={legend}>
           <ResponsiveContainer>
@@ -343,7 +351,12 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
   )
 }
 
-/** Running totals of one partie (picker, default = latest). */
+type ProgressScope = 'partie' | 'game'
+
+/**
+ * Running totals of one partie (picker, default = latest) or, in the group view, of the whole
+ * endless game with dashed lines where a new partie starts.
+ */
 function PartieProgressChart({
   partien,
   playerIds,
@@ -357,50 +370,91 @@ function PartieProgressChart({
 }) {
   const theme = useChartTheme()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [scope, setScope] = useState<ProgressScope>('partie')
+  const whole = mode === 'group' && scope === 'game'
   const partie = partien.find((p) => p.id === selectedId) ?? partien[partien.length - 1]
   // Group view keeps the page's colors; player view shows everyone of that partie, selected player first.
   const ids =
     mode === 'group'
       ? playerIds
       : [...partie.playerIds].sort((a, b) => Number(b === playerIds[0]) - Number(a === playerIds[0]))
-  const rows = partieProgress(partie, ids)
+  const rows = whole ? handsProgress(partien.flatMap((p) => p.hands), ids) : partieProgress(partie, ids)
   const name = (id: string) => names.get(id) ?? '?'
+
+  // Hand index after which each later partie starts.
+  const boundaries: number[] = []
+  if (whole) {
+    let count = 0
+    for (const p of partien.slice(0, -1)) boundaries.push((count += p.hands.length))
+  }
 
   const label = (p: Partie) =>
     `${formatDate(p.startedAt)} ${formatTime(p.startedAt)}${mode === 'player' ? ` – ${joinNames(p.playerIds.map(name))}` : ''}${p.inProgress ? ' (probíhá)' : ''}`
 
+  const tooltipLabel = (l: unknown, row: Record<string, unknown> | undefined) => {
+    if (l === 0) return 'Začátek'
+    const date = row?.date
+    return whole && typeof date === 'string' ? `Kolo ${l} · ${formatDate(date)}` : `Kolo ${l}`
+  }
+
   return (
     <ChartCard
-      title="Průběh partie"
-      subtitle="Body celkem po jednotlivých kolech"
+      title={whole ? 'Průběh celé hry' : 'Průběh partie'}
+      subtitle={whole ? 'Body celkem po jednotlivých kolech, čárkovaně začátek partie' : 'Body celkem po jednotlivých kolech'}
       legend={ids.map((id, i) => ({ name: name(id), color: theme.series(i) }))}
       height="h-64 sm:h-72"
       className="lg:col-span-2"
       actions={
-        <select
-          className={`${selectClass} w-auto! py-1! text-sm`}
-          value={partie.id}
-          onChange={(e) => setSelectedId(e.target.value)}
-          aria-label="Vybrat partii"
-        >
-          {[...partien].reverse().map((p) => (
-            <option key={p.id} value={p.id}>
-              {label(p)}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          {mode === 'group' && (
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-0.5 text-sm" role="tablist">
+              {(
+                [
+                  ['partie', 'Partie'],
+                  ['game', 'Celá hra'],
+                ] as const
+              ).map(([value, text]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={scope === value}
+                  onClick={() => setScope(value)}
+                  className={`rounded-md px-3 py-1 font-semibold ${scope === value ? 'bg-surface shadow-sm' : 'text-stone-500'}`}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+          )}
+          {!whole && (
+            <select
+              className={`${selectClass} w-auto! py-1! text-sm`}
+              value={partie.id}
+              onChange={(e) => setSelectedId(e.target.value)}
+              aria-label="Vybrat partii"
+            >
+              {[...partien].reverse().map((p) => (
+                <option key={p.id} value={p.id}>
+                  {label(p)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       }
     >
       <ResponsiveContainer>
         <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: -10 }}>
           <CartesianGrid {...gridProps(theme)} />
-          <XAxis dataKey="hand" {...axisProps(theme)} allowDecimals={false} minTickGap={16} />
+          <XAxis dataKey="hand" type="number" domain={[0, 'dataMax']} {...axisProps(theme)} allowDecimals={false} minTickGap={16} />
           <YAxis {...axisProps(theme)} width={44} />
+          {boundaries.map((x) => (
+            <ReferenceLine key={x} x={x} stroke={theme.reference} strokeDasharray="3 3" />
+          ))}
           <Tooltip
             cursor={{ stroke: theme.reference, strokeWidth: 1 }}
-            content={(p) => (
-              <ChartTooltip {...p} formatLabel={(l) => (l === 0 ? 'Začátek' : `Kolo ${l}`)} formatValue={num} />
-            )}
+            content={(p) => <ChartTooltip {...p} formatLabel={tooltipLabel} formatValue={num} />}
           />
           {ids.map((id, i) => (
             <Line
@@ -412,6 +466,7 @@ function PartieProgressChart({
               strokeWidth={2}
               dot={rows.length <= 30 ? { r: 2.5, strokeWidth: 0, fill: theme.series(i) } : false}
               activeDot={{ r: 4.5, strokeWidth: 2, stroke: theme.surface }}
+              isAnimationActive={rows.length <= 200}
             />
           ))}
         </LineChart>

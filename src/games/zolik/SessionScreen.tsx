@@ -30,6 +30,7 @@ import {
 import { ZolikScoreboard } from './Scoreboard'
 
 // Charts are heavy; the entry panel renders first, the statistics follow.
+const ZolikProgress = lazy(() => import('./StatsView').then((m) => ({ default: m.ZolikProgress })))
 const ZolikSummary = lazy(() => import('./StatsView').then((m) => ({ default: m.ZolikSummary })))
 const ZolikCharts = lazy(() => import('./StatsView').then((m) => ({ default: m.ZolikCharts })))
 
@@ -481,6 +482,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
           <Spinner />
         ) : (
           <Suspense fallback={<Spinner />}>
+            <ZolikProgress data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
             <ZolikSummary data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
             <ZolikCharts data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
           </Suspense>
