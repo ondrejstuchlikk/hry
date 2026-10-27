@@ -109,23 +109,23 @@ describe('partie winner (lower is better)', () => {
 })
 
 describe('partie split', () => {
-  it('starts a new partie after a 1 h pause or an ended partie', () => {
+  it('starts a new partie after a 4 h pause or an ended partie', () => {
     const hands = [
       hand(0, { a: 0, b: 1 }),
-      hand(59, { a: 0, b: 1 }),
-      hand(59 + 60, { a: 0, b: 1 }, { endsPartie: true }),
-      hand(59 + 61, { a: 0, b: 1 }),
+      hand(239, { a: 0, b: 1 }),
+      hand(239 + 240, { a: 0, b: 1 }, { endsPartie: true }),
+      hand(239 + 241, { a: 0, b: 1 }),
     ]
     expect(splitPartie(hands).map((p) => p.length)).toEqual([2, 1, 1])
   })
 
   it('finds the partie in progress and the last finished one', () => {
-    const hands = [hand(0, { a: 0, b: 1 }), hand(120, { a: 0, b: 1 })]
-    const now = T0 + 130 * 60_000
+    const hands = [hand(0, { a: 0, b: 1 }), hand(300, { a: 0, b: 1 })]
+    const now = T0 + 310 * 60_000
     expect(currentAndLastPartie(hands, now).current).toHaveLength(1)
     expect(currentAndLastPartie(hands, now).last).toHaveLength(1)
-    // After an hour without a hand, nothing is in progress.
-    const later = currentAndLastPartie(hands, T0 + 120 * 60_000 + PARTIE_BREAK_MS)
+    // After 4 hours without a hand, nothing is in progress.
+    const later = currentAndLastPartie(hands, T0 + 300 * 60_000 + PARTIE_BREAK_MS)
     expect(later.current).toEqual([])
     expect(later.last).toHaveLength(1)
   })
@@ -168,7 +168,7 @@ describe('building hands', () => {
 
 describe('stored dealer', () => {
   const base = { playerIds: ['a', 'b'], lastRoundNo: 3, partieEmpty: false, now: T0 }
-  const stored = { dealerId: 'b', afterRound: 3, drawnAt: at(-200) }
+  const stored = { dealerId: 'b', afterRound: 3, drawnAt: at(-300) }
 
   it('is reused until a hand is saved or deleted', () => {
     expect(storedDealerValid(stored, base)).toBe(true)
@@ -177,7 +177,7 @@ describe('stored dealer', () => {
     expect(storedDealerValid(null, base)).toBe(false)
   })
 
-  it('is redrawn for a new partie when it is older than an hour', () => {
+  it('is redrawn for a new partie when it is older than the partie break', () => {
     expect(storedDealerValid(stored, { ...base, partieEmpty: true })).toBe(false)
     expect(storedDealerValid({ ...stored, drawnAt: at(-10) }, { ...base, partieEmpty: true })).toBe(true)
   })

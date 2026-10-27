@@ -19,12 +19,12 @@ Implement Žolík as a new module `src/games/zolik/` implementing the common `Ga
 | Concept | Czech UI term | DB entity |
 |---|---|---|
 | one hand | „kolo“ (e.g. „Kolo 7“) | `rounds` |
-| one evening (part of the endless game) | „partie“ | derived from `rounds` (1 h pause or `ends_partie`) |
+| one evening (part of the endless game) | „partie“ | derived from `rounds` (4 h pause or `ends_partie`) |
 | hand winner | „výherce“ | `rounds.winner_player_id` |
 | dealer | „rozdává“ | `rounds.dealer_player_id` |
 | jokers kept for next hand | „žolíky do dalšího kola“ | `rounds.jokers_kept` |
 
-Like Kostky, a Žolík **game** („hra“) is endless and defined by the game type + the set of players; it is created with „Nová hra“ / „Začít hru“ and listed under „Moje hry“. Inside a game, rounds are grouped into **partie** (one evening each): a partie ends with „Pro dnešek konec“ (sets `rounds.ends_partie` on its last round) or after a pause of ≥ 1 h, and the next recorded round automatically starts a new partie. „Pokračovat v partii“ reopens a partie ended by mistake (within 1 h). Use „Vítěz partie“ for the partie result. Do not rename anything in Kostky.
+Like Kostky, a Žolík **game** („hra“) is endless and defined by the game type + the set of players; it is created with „Nová hra“ / „Začít hru“ and listed under „Moje hry“. Inside a game, rounds are grouped into **partie** (one evening each): a partie ends with „Pro dnešek konec“ (sets `rounds.ends_partie` on its last round) or after a pause of ≥ 4 h, and the next recorded round automatically starts a new partie. „Pokračovat v partii“ reopens a partie ended by mistake (within 4 h). Use „Vítěz partie“ for the partie result. Do not rename anything in Kostky.
 
 ## Database changes
 
@@ -114,7 +114,7 @@ No keyboard shortcuts are required beyond Enter/Tab/focus handling.
 
 ### Ending a partie
 
-- „Pro dnešek konec“ ends the partie manually. As with Kostky, it also ends automatically after 1 h of inactivity (existing `close_stale_sessions()`).
+- „Pro dnešek konec“ ends the partie manually. It also ends automatically after 4 h without a recorded hand (`PARTIE_BREAK_MS` in `src/games/zolik/logic.ts`; Kostky evenings keep their 1 h pause).
 - Since hands are saved only when complete, there is no incomplete-round dialog for Žolík. If a hand is partially entered, ask „Rozehrané kolo se neuloží. Ukončit?“ with buttons „Ukončit“ / „Zpět“.
 - **Winner of the partie = lowest total.** Ties → all tied players win. A partie with zero hands has no winner.
   - Make the existing winner logic generic via `game_types.scoring`, if it isn't already.

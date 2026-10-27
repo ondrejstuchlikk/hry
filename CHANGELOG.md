@@ -5,6 +5,7 @@ All notable changes to the app. Newest first. Dates are deploy dates (push to `m
 ## 2026-10-27
 
 ### Žolík game page
+- A partie now ends after **4 h** without a recorded hand (was 1 h). „Pokračovat v partii“ works within the same 4 h. Existing hands are regrouped accordingly (the split is derived, nothing in the DB changes).
 - Big score table next to the entry panel: „Dnešní partie“ (points, hands won) and „Celá hra“ (points, hands won, partie won) in one table. Replaces the small „Dnešní partie“ table.
 - „Tabulka kol“ moved to the bottom of the page, below the statistics.
 - Progress chart opens in the „Celá hra“ view by default; „Partie“ is still one click away.

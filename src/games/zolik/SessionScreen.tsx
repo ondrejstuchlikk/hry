@@ -75,7 +75,7 @@ export function ZolikSessionScreen({ detail, showDraw, onDrawShown }: SessionScr
   const [dealer, setDealer] = useState<Dealer | null>(null)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-  // Partie boundaries depend on the clock (1 h pause).
+  // Partie boundaries depend on the clock (4 h pause).
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000)
     return () => clearInterval(timer)

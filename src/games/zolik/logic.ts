@@ -1,4 +1,4 @@
-// Žolík rules: in each hand („hra“) one player wins and gets 0, every other player records
+// Žolík rules: in each hand („kolo“) one player wins and gets 0, every other player records
 // the value of their remaining cards (≥ 1). Lower total wins. The dealer is drawn before
 // every hand; the hand winner may keep 0–4 jokers for the next hand.
 // The game is endless; a „partie“ (evening) ends after a pause of ≥ PARTIE_BREAK_MS between
@@ -6,7 +6,7 @@
 import type { Round, ScoredEntry } from '../../lib/types'
 import { pickWinners } from '../winners'
 
-export const PARTIE_BREAK_MS = 60 * 60 * 1000
+export const PARTIE_BREAK_MS = 4 * 60 * 60 * 1000
 export const DEFAULT_MAX_JOKERS = 4
 export const DEFAULT_MIN_LOSER_VALUE = 1
 export const DEFAULT_MAX_WARNING = 200
@@ -59,7 +59,7 @@ export function buildHands(rounds: HandRound[], entries: HandEntry[]): ZolikHand
 
 type PartieHand = Pick<ZolikHand, 'createdAt' | 'endsPartie'>
 
-/** Splits chronological hands into partie: a pause ≥ 1 h or an ended partie starts a new one. */
+/** Splits chronological hands into partie: a pause ≥ 4 h or an ended partie starts a new one. */
 export function splitPartie<T extends PartieHand>(hands: T[]): T[][] {
   const result: T[][] = []
   let previous: T | null = null
@@ -202,7 +202,7 @@ export interface StoredDealer {
 
 /**
  * A stored draw still applies when no hand was saved or deleted since, and — once the
- * partie has no hands yet (new evening) — it was drawn within the last hour.
+ * partie has no hands yet (new evening) — it was drawn within PARTIE_BREAK_MS.
  */
 export function storedDealerValid(
   stored: StoredDealer | null,
