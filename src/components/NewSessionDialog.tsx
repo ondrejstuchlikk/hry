@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { createGuest, createSession, searchAccountPlayers } from '../lib/api'
 import { useAuth } from '../lib/AuthProvider'
+import type { GameModule } from '../games/types'
 import type { GameType, Player } from '../lib/types'
 import { usePlayers } from '../lib/usePlayers'
 import { Dialog } from './Dialog'
@@ -10,11 +11,13 @@ const MIN_PLAYERS = 2
 
 export function NewSessionDialog({
   gameType,
+  labels,
   open,
   onClose,
   onCreated,
 }: {
   gameType: GameType
+  labels: GameModule['labels']
   open: boolean
   onClose: () => void
   onCreated: (sessionId: string) => void
@@ -60,7 +63,7 @@ export function NewSessionDialog({
     .sort((a, b) => Number(b.created_by === profile?.id) - Number(a.created_by === profile?.id))
 
   return (
-    <Dialog open={open} onClose={onClose} title={`Nová hra – ${gameType.name}`} wide>
+    <Dialog open={open} onClose={onClose} title={`${labels.newSession} – ${gameType.name}`} wide>
       <div className="space-y-5">
         <div>
           <h3 className="mb-2 text-sm font-semibold uppercase text-stone-500">Hráči ({selected.length})</h3>
@@ -113,7 +116,7 @@ export function NewSessionDialog({
             Zrušit
           </Button>
           <Button size="lg" onClick={start} disabled={busy || selected.length < MIN_PLAYERS}>
-            Začít hru
+            {labels.startSession}
           </Button>
         </div>
       </div>

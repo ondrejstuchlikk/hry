@@ -15,9 +15,11 @@ export function OverallStatsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const module = gameModules[gameTypeId]
+
   useEffect(() => {
     setData(null)
-    loadStatsData(gameTypeId)
+    loadStatsData(gameTypeId, undefined, { withRounds: gameModules[gameTypeId]?.statsWithRounds })
       .then(setData)
       .catch((e) => setError(errorMessage(e)))
   }, [gameTypeId])
@@ -34,10 +36,10 @@ export function OverallStatsPage() {
       sessions,
       entries: data.entries.filter((e) => ids.has(e.session_id)),
       draws: data.draws.filter((d) => ids.has(d.session_id)),
+      rounds: data.rounds?.filter((r) => ids.has(r.session_id)),
     }
   }, [data, playerId])
 
-  const module = gameModules[gameTypeId]
   const playerIdList = useMemo(() => (playerId ? [playerId] : []), [playerId])
 
   return (

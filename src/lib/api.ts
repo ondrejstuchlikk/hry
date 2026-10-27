@@ -211,6 +211,41 @@ export async function undoLastEntry(sessionId: string): Promise<Entry | null> {
   return check(await supabase.rpc('undo_last_entry', { p_session_id: sessionId })) as Entry | null
 }
 
+export interface ZolikHandInput {
+  dealerId: string
+  winnerId: string
+  jokersKept: number
+  /** Points of every player except the winner. */
+  loserValues: Record<string, number>
+}
+
+/** Saves one complete Žolík hand (round + an entry per player) atomically. */
+export async function recordZolikHand(
+  sessionId: string,
+  hand: ZolikHandInput,
+): Promise<{ round: Round; entries: ScoredEntry[] }> {
+  const result = check(
+    await supabase.rpc('record_zolik_hand', {
+      p_session_id: sessionId,
+      p_dealer_player_id: hand.dealerId,
+      p_winner_player_id: hand.winnerId,
+      p_jokers_kept: hand.jokersKept,
+      p_loser_values: hand.loserValues,
+    }),
+  ) as { round: Round; entries: Entry[] }
+  return { round: result.round, entries: result.entries.map((e) => toScored(e, result.round.round_no)) }
+}
+
+/** Deletes the last round with its entries; returns it, or null when there was none. */
+export async function deleteLastRound(sessionId: string): Promise<Round | null> {
+  return check(await supabase.rpc('delete_last_round', { p_session_id: sessionId })) as Round | null
+}
+
+/** Žolík „Pro dnešek konec“: marks (or unmarks) the round after which the partie ends. */
+export async function setPartieEnded(roundId: string, ended: boolean): Promise<void> {
+  check(await supabase.from('rounds').update({ ends_partie: ended }).eq('id', roundId))
+}
+
 // ---------------------------------------------------------------------------
 // Statistics
 // ---------------------------------------------------------------------------
@@ -221,10 +256,16 @@ export interface StatsData {
   /** Chronological: by session, then by seq. */
   entries: ScoredEntry[]
   draws: Draw[]
+  /** Only loaded on request (games with per-round data, e.g. Žolík). */
+  rounds?: Round[]
 }
 
 /** All sessions + entries of a game type visible to the user, optionally limited to one group. */
-export async function loadStatsData(gameTypeId: string, groupKey?: string): Promise<StatsData> {
+export async function loadStatsData(
+  gameTypeId: string,
+  groupKey?: string,
+  { withRounds = false }: { withRounds?: boolean } = {},
+): Promise<StatsData> {
   const sessions = (await listSessions({ gameTypeId, groupKey })).sort((a, b) => a.started_at.localeCompare(b.started_at))
 
   type Row = Omit<Entry, 'round_id' | 'id'> & { id: string; rounds: { round_no: number } }
@@ -251,6 +292,37 @@ export async function loadStatsData(gameTypeId: string, groupKey?: string): Prom
     }))
     .sort((a, b) => (sessionIndex.get(a.session_id) ?? 0) - (sessionIndex.get(b.session_id) ?? 0) || a.seq - b.seq)
 
-  const draws = await loadDraws(sessions.map((s) => s.id))
-  return { sessions, entries, draws }
+  const [draws, rounds] = await Promise.all([
+    loadDraws(sessions.map((s) => s.id)),
+    withRounds ? loadRounds(gameTypeId, groupKey) : undefined,
+  ])
+  return { sessions, entries, draws, rounds }
+}
+
+async function loadRounds(gameTypeId: string, groupKey?: string): Promise<Round[]> {
+  const rows = await fetchAll<Round & { sessions: unknown }>((from, to) => {
+    let query = supabase
+      .from('rounds')
+      .select(
+        'id, session_id, round_no, winner_player_id, dealer_player_id, jokers_kept, ends_partie, created_at, sessions!inner(game_type_id, group_key)',
+      )
+      .eq('sessions.game_type_id', gameTypeId)
+    if (groupKey) query = query.eq('sessions.group_key', groupKey)
+    return query.order('id').range(from, to) as unknown as PromiseLike<{
+      data: (Round & { sessions: unknown })[] | null
+      error: unknown
+    }>
+  })
+  return rows
+    .map((r) => ({
+      id: r.id,
+      session_id: r.session_id,
+      round_no: r.round_no,
+      winner_player_id: r.winner_player_id,
+      dealer_player_id: r.dealer_player_id,
+      jokers_kept: r.jokers_kept,
+      ends_partie: r.ends_partie,
+      created_at: r.created_at,
+    }))
+    .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.round_no - b.round_no)
 }

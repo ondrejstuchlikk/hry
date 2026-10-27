@@ -3,6 +3,10 @@ export type Scoring = 'higher_better' | 'lower_better'
 export interface GameConfig {
   max_warning?: number
   round_complete?: 'all_players' | 'round_winner'
+  /** Žolík: most jokers the hand winner may keep. */
+  max_jokers?: number
+  /** Žolík: smallest value a loser can record. */
+  min_loser_value?: number
 }
 
 export interface GameType {
@@ -50,6 +54,13 @@ export interface Round {
   session_id: string
   round_no: number
   winner_player_id: string | null
+  /** Žolík: who dealt the hand. */
+  dealer_player_id: string | null
+  /** Žolík: jokers the hand winner keeps for the next hand. */
+  jokers_kept: number | null
+  /** Žolík: „Pro dnešek konec“ — the partie ends after this hand. */
+  ends_partie: boolean
+  created_at: string
 }
 
 export interface Entry {
