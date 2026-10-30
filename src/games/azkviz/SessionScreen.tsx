@@ -276,6 +276,7 @@ export function AzkvizSessionScreen({ detail, showDraw, onDrawShown }: SessionSc
             leader={leaders.has(p.id)}
             popKey={pop?.playerId === p.id ? pop.key : null}
             tall={few}
+            bigName={players.length <= 3}
             onTap={() => record(p.id)}
           />
         ))}
@@ -284,7 +285,7 @@ export function AzkvizSessionScreen({ detail, showDraw, onDrawShown }: SessionSc
       <button
         type="button"
         onClick={() => record(null)}
-        className="w-full touch-manipulation rounded-2xl border-2 border-dashed border-stone-300 bg-stone-100 py-4 text-xl font-bold text-stone-600 active:bg-stone-200"
+        className="w-full touch-manipulation rounded-2xl border-2 border-dashed border-stone-300 bg-stone-100 py-7 text-2xl font-bold text-stone-600 active:bg-stone-200 sm:py-4 sm:text-xl"
       >
         Nikdo
       </button>
@@ -328,6 +329,7 @@ function PlayerButton({
   leader,
   popKey,
   tall,
+  bigName,
   onTap,
 }: {
   player: SessionPlayer
@@ -335,6 +337,8 @@ function PlayerButton({
   leader: boolean
   popKey: number | null
   tall: boolean
+  /** Fewer players = wider buttons, room for a bigger name. */
+  bigName: boolean
   onTap: () => void
 }) {
   return (
@@ -345,11 +349,13 @@ function PlayerButton({
         tall ? 'min-h-24 py-3' : 'min-h-28 py-4'
       } ${leader ? 'ring-4 ring-brand-500' : 'ring-1 ring-stone-300'}`}
     >
-      <span className="flex max-w-full items-center gap-1.5 text-xl font-bold sm:text-2xl">
+      <span
+        className={`flex max-w-full items-center gap-1.5 pb-1 font-extrabold leading-tight ${bigName ? 'text-5xl sm:text-6xl' : 'text-4xl'}`}
+      >
         {leader && <span aria-label="vede">👑</span>}
         <span className="truncate">{player.name}</span>
       </span>
-      <span className={`tabular font-extrabold leading-none ${tall ? 'text-6xl sm:text-7xl' : 'text-5xl'}`}>{score}</span>
+      <span className={`tabular font-bold ${tall ? 'text-2xl sm:text-3xl' : 'text-xl'}`}>{score}</span>
       {popKey !== null && (
         <span
           key={popKey}

@@ -14,6 +14,7 @@ All notable changes to the app. Newest first. Dates are deploy dates (push to `m
 - Entry screen: big player buttons with live scores, leader crown, „+1“ pop, haptics, 400 ms double-tap guard, „Zpět“ with a toast („Vráceno: bod – Ondra“).
 - „Průběžné statistiky“ (score table, progression, streaks, „Nikdo“ count, comparison with each player's average) and full group/overall statistics. Stats that depend on the number of questions carry the „Nikdo“ note.
 - Game cards are ordered Kostky, Žolík, AZ-kvíz.
+- Player buttons: the name is big, the points small. „Nikdo“ is taller on phones.
 
 ## 2026-10-27
 
