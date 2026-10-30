@@ -9,8 +9,6 @@ const AzkvizStatsView = lazy(() => import('./StatsView').then((m) => ({ default:
 export const azkvizModule: GameModule = {
   id: 'azkviz',
   statsWithRounds: true,
-  labels: { newSession: 'Nová epizoda', startSession: 'Začít epizodu' },
-  offerLastLineup: true,
   SessionScreen: AzkvizSessionScreen,
   StatsView: AzkvizStatsView,
   ComparisonTable,

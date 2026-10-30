@@ -32,10 +32,6 @@ export interface GameModule {
   id: string
   /** Statistics need the rounds (loadStatsData withRounds). */
   statsWithRounds?: boolean
-  /** Wording of the „Nová hra“ button and dialog (default „Nová hra“ / „Začít hru“). */
-  labels?: { newSession: string; startSession: string }
-  /** „Nová hra“ dialog offers „Stejní hráči jako minule“ (the most recently played game). */
-  offerLastLineup?: boolean
   /** Scoring screen of an (endless) session, incl. its statistics. */
   SessionScreen: ComponentType<SessionScreenProps>
   StatsView: ComponentType<StatsViewProps>
