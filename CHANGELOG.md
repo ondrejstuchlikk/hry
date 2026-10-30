@@ -4,6 +4,9 @@ All notable changes to the app. Newest first. Dates are deploy dates (push to `m
 
 ## 2026-10-30
 
+### All games
+- The screen stays on while a game is open (Screen Wake Lock API, `useWakeLock`). On iPhone it needs iOS 16.4+ in Safari, or iOS 18.4+ when added to the home screen; elsewhere the normal auto-lock applies.
+
 ### AZ-kvíz
 - New game type AZ-kvíz (migration `006_azkviz.sql`): one tap on a player's button = 1 point, „Nikdo“ = nobody scored. Saved via `record_azkviz_question`, undone via `undo_last_question`.
 - Like Žolík, the game is endless per player set; an „epizoda“ is derived: it ends with „Konec epizody“ or after 3 h without a question (`game_types.config.inactivity_minutes`). „Pokračovat v epizodě“ reopens an episode ended by mistake.

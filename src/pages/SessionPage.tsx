@@ -4,12 +4,15 @@ import { EmptyState, errorMessage, ErrorText, Spinner } from '../components/ui'
 import { gameModules } from '../games'
 import { loadSessionDetail } from '../lib/api'
 import type { SessionDetail } from '../lib/types'
+import { useWakeLock } from '../lib/useWakeLock'
 
 export function SessionPage() {
   const { sessionId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const [detail, setDetail] = useState<SessionDetail | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  // Players wait between turns; keep the phone from dimming and locking on any game screen.
+  useWakeLock()
 
   // Always fresh data from the DB when a game is opened.
   useEffect(() => {
