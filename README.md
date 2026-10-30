@@ -14,7 +14,8 @@ React + Vite + TypeScript, Tailwind, Recharts, Supabase; hosted on GitHub Pages.
    3. `supabase/migrations/003_rls.sql`
    4. `supabase/migrations/004_endless_games.sql`
    5. `supabase/migrations/005_zolik.sql`
-   6. `supabase/seed.sql`
+   6. `supabase/migrations/006_azkviz.sql`
+   7. `supabase/seed.sql`
 3. **Authentication → Sign In / Providers → Email**: turn **off „Confirm email“**.
    (Users sign in with a username; the app maps it to a synthetic email `<username>@ondrejstuchlikk.github.io`
    — see `AUTH_EMAIL_DOMAIN` in `src/lib/auth.ts`. No mail is ever sent. If signup fails with an
@@ -60,6 +61,7 @@ src/lib/          Supabase client, auth (username ↔ email), API calls, formatt
 src/games/        GameModule interface (types.ts) + registry (index.ts)
 src/games/kostky/ Kostky: turn/winner logic, session screen, result, statistics
 src/games/zolik/  Žolík: hand recording, partie, score table, statistics (spec: zolik.md)
+src/games/azkviz/ AZ-kvíz: one-tap question scoring, episodes, live and group statistics (spec: azkviz.md)
 src/pages/        Login, Games, Session, Stats, OverallStats
 src/components/   Shared UI (Dialog, NewSessionDialog, charts, …)
 supabase/         SQL migrations, seed, optional pg_cron job

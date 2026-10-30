@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { gameModules } from '../games'
+import { gameModules, sortGameTypes } from '../games'
 import { getGameTypes } from '../lib/api'
 import type { GameType } from '../lib/types'
 
@@ -10,7 +10,7 @@ export function GameTypeSelect({ value, onChange }: { value: string; onChange: (
   const [types, setTypes] = useState<GameType[]>([])
   useEffect(() => {
     getGameTypes()
-      .then(setTypes)
+      .then((t) => setTypes(sortGameTypes(t)))
       .catch(() => setTypes([]))
   }, [])
 

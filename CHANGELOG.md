@@ -2,6 +2,16 @@
 
 All notable changes to the app. Newest first. Dates are deploy dates (push to `main`).
 
+## 2026-10-30
+
+### AZ-kvíz
+- New game type AZ-kvíz (migration `006_azkviz.sql`): one tap on a player's button = 1 point, „Nikdo“ = nobody scored. Saved via `record_azkviz_question`, undone via `undo_last_question`.
+- Like Žolík, the game is endless per player set; an „epizoda“ is derived: it ends with „Konec epizody“ or after 3 h without a question (`game_types.config.inactivity_minutes`). „Pokračovat v epizodě“ reopens an episode ended by mistake.
+- Player order stays as selected (`config.fixed_order`, no draw). „Nová epizoda“ offers „Stejní hráči jako minule“.
+- Entry screen: big player buttons with live scores, leader crown, „+1“ pop, haptics, 400 ms double-tap guard, „Zpět“ with a toast („Vráceno: bod – Ondra“).
+- „Průběžné statistiky“ (score table, progression, streaks, „Nikdo“ count, comparison with each player's average) and full group/overall statistics. Stats that depend on the number of questions carry the „Nikdo“ note.
+- Game cards are ordered Kostky, Žolík, AZ-kvíz.
+
 ## 2026-10-27
 
 ### Žolík game page

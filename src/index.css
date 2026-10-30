@@ -162,3 +162,29 @@ input[type='number']::-webkit-outer-spin-button {
 .recharts-surface {
   outline: none;
 }
+
+/* AZ-kvíz: „+1“ rising from a player button after a tap. */
+@keyframes score-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(0.25rem) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-1.75rem) scale(1);
+  }
+}
+
+.score-pop {
+  animation: score-pop 700ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score-pop {
+    animation-duration: 1ms;
+  }
+}

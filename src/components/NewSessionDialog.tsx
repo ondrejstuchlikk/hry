@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { gameModules } from '../games'
 import { createGuest, createSession, searchAccountPlayers } from '../lib/api'
 import { useAuth } from '../lib/AuthProvider'
 import type { GameType, Player } from '../lib/types'
@@ -10,11 +11,14 @@ const MIN_PLAYERS = 2
 
 export function NewSessionDialog({
   gameType,
+  lastLineup,
   open,
   onClose,
   onCreated,
 }: {
   gameType: GameType
+  /** Players of the most recently played game of this type (for „Stejní hráči jako minule“). */
+  lastLineup?: string[]
   open: boolean
   onClose: () => void
   onCreated: (sessionId: string) => void
@@ -37,14 +41,23 @@ export function NewSessionDialog({
     if (!isSelected(p.id)) setSelected((prev) => [...prev, p])
   }
 
-  async function start() {
-    if (selected.length < MIN_PLAYERS) return
+  const module = gameModules[gameType.id]
+  const labels = module?.labels ?? { newSession: 'Nová hra', startSession: 'Začít hru' }
+  // Only a line-up the user plays in (create_session requires it) whose players are all known.
+  const lineup =
+    module?.offerLastLineup && lastLineup && me && lastLineup.includes(me.id)
+      ? lastLineup.map((id) => visible.find((p) => p.id === id))
+      : []
+  const lastPlayers = lineup.length >= MIN_PLAYERS && lineup.every(Boolean) ? (lineup as Player[]) : null
+
+  async function start(players: Player[] = selected) {
+    if (players.length < MIN_PLAYERS) return
     setBusy(true)
     setError(null)
     try {
       const id = await createSession(
         gameType.id,
-        selected.map((p) => p.id),
+        players.map((p) => p.id),
       )
       onCreated(id)
     } catch (e) {
@@ -60,8 +73,23 @@ export function NewSessionDialog({
     .sort((a, b) => Number(b.created_by === profile?.id) - Number(a.created_by === profile?.id))
 
   return (
-    <Dialog open={open} onClose={onClose} title={`Nová hra – ${gameType.name}`} wide>
+    <Dialog open={open} onClose={onClose} title={`${labels.newSession} – ${gameType.name}`} wide>
       <div className="space-y-5">
+        {lastPlayers && (
+          <Button
+            variant="secondary"
+            size="lg"
+            className="w-full flex-col gap-0!"
+            disabled={busy}
+            onClick={() => start(lastPlayers)}
+          >
+            Stejní hráči jako minule
+            <span className="text-sm font-medium text-stone-500">
+              {lastPlayers.map((p) => p.display_name).join(', ')}
+            </span>
+          </Button>
+        )}
+
         <div>
           <h3 className="mb-2 text-sm font-semibold uppercase text-stone-500">Hráči ({selected.length})</h3>
           <ul className="flex flex-wrap gap-2">
@@ -112,8 +140,8 @@ export function NewSessionDialog({
           <Button variant="secondary" size="lg" onClick={onClose}>
             Zrušit
           </Button>
-          <Button size="lg" onClick={start} disabled={busy || selected.length < MIN_PLAYERS}>
-            Začít hru
+          <Button size="lg" onClick={() => start()} disabled={busy || selected.length < MIN_PLAYERS}>
+            {labels.startSession}
           </Button>
         </div>
       </div>

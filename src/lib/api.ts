@@ -241,7 +241,26 @@ export async function deleteLastRound(sessionId: string): Promise<Round | null> 
   return check(await supabase.rpc('delete_last_round', { p_session_id: sessionId })) as Round | null
 }
 
-/** Žolík „Pro dnešek konec“: marks (or unmarks) the round after which the partie ends. */
+/** Saves one AZ-kvíz question: the round, plus an entry (value 1) for the winner. null = „Nikdo“. */
+export async function recordAzkvizQuestion(
+  sessionId: string,
+  winnerId: string | null,
+): Promise<{ round: Round; entry: ScoredEntry | null }> {
+  const result = check(
+    await supabase.rpc('record_azkviz_question', { p_session_id: sessionId, p_winner_player_id: winnerId }),
+  ) as { round: Round; entry: Entry | null }
+  return { round: result.round, entry: result.entry ? toScored(result.entry, result.round.round_no) : null }
+}
+
+/** AZ-kvíz „Zpět“: deletes the last question; returns it, or null when there was none. */
+export async function undoLastQuestion(sessionId: string): Promise<Round | null> {
+  return check(await supabase.rpc('undo_last_question', { p_session_id: sessionId })) as Round | null
+}
+
+/**
+ * Žolík „Pro dnešek konec“ / AZ-kvíz „Konec epizody“: marks (or unmarks) the round after
+ * which the partie / episode ends.
+ */
 export async function setPartieEnded(roundId: string, ended: boolean): Promise<void> {
   check(await supabase.from('rounds').update({ ends_partie: ended }).eq('id', roundId))
 }

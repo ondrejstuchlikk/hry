@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { NewSessionDialog } from '../components/NewSessionDialog'
 import { Button, Card, EmptyState, errorMessage, ErrorText, SectionTitle, Spinner } from '../components/ui'
-import { DEFAULT_GAME_TYPE, gameModules } from '../games'
+import { DEFAULT_GAME_TYPE, gameModules, sortGameTypes } from '../games'
 import { getGameTypes, listSessions } from '../lib/api'
 import { formatDate, formatTime, joinNames } from '../lib/format'
 import type { GameType, SessionWithPlayers } from '../lib/types'
 import { usePlayers } from '../lib/usePlayers'
 
-const GAME_ICONS: Record<string, string> = { kostky: '🎲', zolik: '🃏' }
+const GAME_ICONS: Record<string, string> = { kostky: '🎲', zolik: '🃏', azkviz: '📺' }
 
 export function GamesPage() {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export function GamesPage() {
   // Game types load independently, so a failing session list never blocks „Nová hra“.
   useEffect(() => {
     getGameTypes()
-      .then(setGameTypes)
+      .then((types) => setGameTypes(sortGameTypes(types)))
       .catch((e) => {
         setGameTypes([])
         setError(errorMessage(e))
@@ -43,11 +43,12 @@ export function GamesPage() {
   }, [load])
 
   const gameType = gameTypes?.find((g) => g.id === gameTypeId)
+  const newSessionLabel = gameModules[gameTypeId]?.labels?.newSession ?? 'Nová hra'
   const playerNames = (s: SessionWithPlayers) => joinNames(s.players.map((p) => names.get(p.player_id) ?? '?'))
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+      <div className="grid grid-cols-3 gap-2 sm:max-w-xl sm:gap-3">
         {gameTypes?.map((g) => {
           const available = Boolean(gameModules[g.id])
           const selected = g.id === gameTypeId
@@ -57,7 +58,7 @@ export function GamesPage() {
               type="button"
               disabled={!available}
               onClick={() => setGameTypeId(g.id)}
-              className={`rounded-2xl p-4 text-left ring-1 transition ${
+              className={`rounded-2xl p-3 text-left ring-1 transition sm:p-4 ${
                 selected
                   ? 'bg-brand-600 text-white shadow-md ring-brand-700'
                   : available
@@ -68,7 +69,7 @@ export function GamesPage() {
               <div className="text-3xl" aria-hidden>
                 {GAME_ICONS[g.id] ?? '🎮'}
               </div>
-              <div className="mt-1 text-lg font-bold">{g.name}</div>
+              <div className="mt-1 font-bold sm:text-lg">{g.name}</div>
               {!available && <div className="text-sm">Již brzy</div>}
             </button>
           )
@@ -83,7 +84,7 @@ export function GamesPage() {
       )}
 
       <Button size="lg" className="w-full sm:w-auto" disabled={!gameType} onClick={() => setDialogOpen(true)}>
-        + Nová hra
+        + {newSessionLabel}
       </Button>
 
       <section>
@@ -92,7 +93,7 @@ export function GamesPage() {
           <Spinner />
         ) : sessions.length === 0 ? (
           <Card>
-            <EmptyState>Zatím žádné hry – začni tlačítkem „Nová hra“</EmptyState>
+            <EmptyState>Zatím žádné hry – začni tlačítkem „{newSessionLabel}“</EmptyState>
           </Card>
         ) : (
           <ul className="space-y-2">
@@ -116,6 +117,7 @@ export function GamesPage() {
       {gameType && (
         <NewSessionDialog
           gameType={gameType}
+          lastLineup={sessions?.[0]?.players.map((p) => p.player_id)}
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           onCreated={(id) => {

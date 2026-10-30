@@ -7,6 +7,10 @@ export interface GameConfig {
   max_jokers?: number
   /** Žolík: smallest value a loser can record. */
   min_loser_value?: number
+  /** Minutes without activity after which a derived episode ends (AZ-kvíz). */
+  inactivity_minutes?: number
+  /** create_session keeps the selected player order instead of drawing it (AZ-kvíz). */
+  fixed_order?: boolean
 }
 
 export interface GameType {
@@ -58,7 +62,7 @@ export interface Round {
   dealer_player_id: string | null
   /** Žolík: jokers the hand winner keeps for the next hand. */
   jokers_kept: number | null
-  /** Žolík: „Pro dnešek konec“ — the partie ends after this hand. */
+  /** Žolík: „Pro dnešek konec“ — the partie ends after this hand; AZ-kvíz: „Konec epizody“. */
   ends_partie: boolean
   created_at: string
 }
