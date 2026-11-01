@@ -20,10 +20,19 @@ import type { Draw, ScoredEntry, SessionPlayer } from '../../lib/types'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import type { SessionScreenProps } from '../types'
 import { currentEvening } from './evenings'
-import { liveStats, nextTurn, orderForRound, parseThrow, type DrawOrder } from './logic'
+import {
+  completeRoundNos,
+  liveStats,
+  nextTurn,
+  orderForRound,
+  parseThrow,
+  sessionTotals,
+  type DrawOrder,
+} from './logic'
 import { Scoreboard } from './Scoreboard'
 
 // Charts are heavy; the entry panel renders first, the statistics follow.
+const KostkyProgress = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkyProgress })))
 const KostkySummary = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkySummary })))
 const KostkyCharts = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkyCharts })))
 
@@ -250,9 +259,11 @@ export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionSc
   const stats = useGameStats(detail, entries, draws)
   const side = (
     <div className="space-y-4">
+      <EveningLeader players={players} entries={entries} />
       <LiveStats players={players} entries={entries} />
       {stats.data && (
         <Suspense fallback={null}>
+          <KostkyProgress data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
           <KostkySummary data={stats.data} playerIds={stats.playerIds} names={stats.names} mode="group" />
         </Suspense>
       )}
@@ -372,6 +383,30 @@ function useGameStats(detail: SessionScreenProps['detail'], entries: ScoredEntry
   )
 
   return { data, failed, names, playerIds }
+}
+
+/** Who leads the evening in progress and by how much; only complete rounds count. */
+function EveningLeader({ players, entries }: { players: SessionPlayer[]; entries: ScoredEntry[] }) {
+  const ids = players.map((p) => p.id)
+  const evening = currentEvening(entries)
+  if (completeRoundNos(ids, evening).size === 0) return null
+  const totals = [...sessionTotals(ids, evening)].sort((a, b) => b[1] - a[1])
+  const best = totals[0][1]
+  const leaders = totals.filter(([, total]) => total === best).map(([id]) => players.find((p) => p.id === id)!.name)
+  const tie = leaders.length > 1
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-stone-200">
+      <p className="min-w-0">
+        <span className="block text-xs font-semibold uppercase text-stone-500">Dnešní večer</span>
+        <span className="block truncate text-xl font-bold">
+          {tie ? 'Remíza' : 'Vede'}: <span className="text-accent">{leaders.join(', ')}</span>
+        </span>
+      </p>
+      {!tie && (
+        <span className="tabular shrink-0 text-2xl font-bold text-accent">+{formatNumber(best - totals[1][1])}</span>
+      )}
+    </div>
+  )
 }
 
 /** Totals over the whole game, plus the evening in progress. */

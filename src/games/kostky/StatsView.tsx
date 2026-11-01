@@ -44,6 +44,7 @@ import {
   starterAdvantage,
   totalPerSession,
   type PlayerSummary,
+  type ProgressRow,
 } from './stats'
 
 const MOVING_WINDOW = 5
@@ -57,11 +58,18 @@ function useStats({ data: raw, playerIds, mode }: StatsViewProps) {
     const data = eveningStats(raw)
     const scores = scoresBySession(data)
     const h2h = headToHead(data, mode === 'group' ? playerIds : allOpponents(data, playerIds[0]))
+    const tonightIds = new Set(data.sessions.filter((s) => s.status === 'active').map((s) => s.id))
     return {
       data,
       summaries: playerIds.map((id) => playerSummary(data, id, scores)),
       // Progress uses the raw rounds: it spans the whole game, not evenings.
       progress: progressByRound(raw, playerIds, FORM_WINDOW),
+      // The evening in progress, rounds numbered from 1.
+      tonight: progressByRound(
+        { ...data, entries: data.entries.filter((e) => tonightIds.has(e.session_id)) },
+        playerIds,
+        FORM_WINDOW,
+      ),
       wins: cumulativeWins(data, playerIds),
       averages: averagePerSession(data, playerIds, MOVING_WINDOW),
       totals: totalPerSession(data, playerIds),
@@ -91,6 +99,16 @@ export function KostkyStatsView(props: StatsViewProps) {
       <Charts stats={stats} {...props} />
     </div>
   )
+}
+
+/** Just the score progress (game page, above the summary table). */
+export function KostkyProgress(props: StatsViewProps) {
+  const stats = useStats(props)
+  const theme = useChartTheme()
+  if (stats.data.sessions.length === 0) return null
+  const name = (id: string) => props.names.get(id) ?? '?'
+  const legend = props.playerIds.map((id, i) => ({ name: name(id), color: theme.series(i) }))
+  return <ProgressChart stats={stats} playerIds={props.playerIds} name={name} theme={theme} legend={legend} />
 }
 
 /** Just the summary table (game page, next to the input). */
@@ -258,11 +276,7 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {mode === 'group' && stats.progress.length > 0 && (
-        <ProgressChart stats={stats} playerIds={playerIds} name={name} theme={theme} legend={legend} />
-      )}
-
-      {mode === 'group' && playerIds.length === 2 && stats.progress.length > 0 && (
+      {mode === 'group' && playerIds.length === 2 && (
         <LeadChart stats={stats} playerIds={playerIds} name={name} theme={theme} />
       )}
 
@@ -430,65 +444,65 @@ function Charts({ stats, playerIds, names, mode }: { stats: Stats } & StatsViewP
         {stats.starter.games === 0 ? (
           <EmptyState>Zatím žádný dokončený večer</EmptyState>
         ) : (
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="rounded-xl bg-stone-50 p-3">
-              <div className="text-xs text-stone-500">Začínající hráč vyhrál</div>
-              <div className="tabular text-2xl font-extrabold">{formatPercent(stats.starter.starterRate ?? 0)}</div>
-              <div className="text-xs text-stone-500">
-                {stats.starter.starterWins} z {stats.starter.games} večerů
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-xl bg-stone-50 p-3">
+                <div className="text-xs text-stone-500">Začínající hráč vyhrál</div>
+                <div className="tabular text-2xl font-extrabold">{formatPercent(stats.starter.starterRate ?? 0)}</div>
+                <div className="text-xs text-stone-500">
+                  {stats.starter.starterWins} z {stats.starter.games} večerů
+                </div>
+              </div>
+              <div className="rounded-xl bg-stone-50 p-3">
+                <div className="text-xs text-stone-500">Ostatní hráči v průměru</div>
+                <div className="tabular text-2xl font-extrabold">{formatPercent(stats.starter.othersRate ?? 0)}</div>
+                <div className="text-xs text-stone-500">výher na hráče</div>
               </div>
             </div>
-            <div className="rounded-xl bg-stone-50 p-3">
-              <div className="text-xs text-stone-500">Ostatní hráči v průměru</div>
-              <div className="tabular text-2xl font-extrabold">{formatPercent(stats.starter.othersRate ?? 0)}</div>
-              <div className="text-xs text-stone-500">výher na hráče</div>
-            </div>
-          </div>
-        )}
-        {ended < 2 && (
-          <p className="mt-3 text-xs text-stone-500">
-            Grafy výher a průměru po večerech se ukážou od dvou odehraných večerů.
-          </p>
-        )}
-      </Card>
+          )}
+          {ended < 2 && (
+            <p className="mt-3 text-xs text-stone-500">
+              Grafy výher a průměru po večerech se ukážou od dvou odehraných večerů.
+            </p>
+          )}
+        </Card>
 
-      {/* With two players the summary table already says who won more often. */}
-      {stats.h2h.length > 0 && !(mode === 'group' && playerIds.length === 2) && (
-        <section className="lg:col-span-2">
-          <SectionTitle>Vzájemné zápasy</SectionTitle>
-          <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-stone-200">
-            <table className="tabular w-full text-sm">
-              <thead className="bg-stone-50 text-xs uppercase text-stone-500">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Dvojice</th>
-                  <th className="px-3 py-2 text-right font-semibold">Večerů</th>
-                  <th className="px-3 py-2 text-right font-semibold">Výhry : prohry</th>
-                  <th className="px-3 py-2 text-right font-semibold">Stejně</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.h2h.map((h) => {
-                  // In player mode, the selected player is always on the left.
-                  const flip = mode === 'player' && h.b === playerIds[0]
-                  const [a, b, aw, bw] = flip ? [h.b, h.a, h.bBetter, h.aBetter] : [h.a, h.b, h.aBetter, h.bBetter]
-                  return (
-                    <tr key={`${h.a}-${h.b}`} className="border-t border-stone-100">
-                      <td className="px-3 py-1.5">
-                        <strong>{name(a)}</strong> vs {name(b)}
-                      </td>
-                      <td className="px-3 py-1.5 text-right">{h.games}</td>
-                      <td className="px-3 py-1.5 text-right font-semibold">
-                        {aw} : {bw}
-                      </td>
-                      <td className="px-3 py-1.5 text-right">{h.equal}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-1 text-xs text-stone-500">Porovnání součtů ve společných večerech (jen dohraná kola).</p>
-        </section>
+        {/* With two players the summary table already says who won more often. */}
+        {stats.h2h.length > 0 && !(mode === 'group' && playerIds.length === 2) && (
+          <section className="lg:col-span-2">
+            <SectionTitle>Vzájemné zápasy</SectionTitle>
+            <div className="overflow-x-auto rounded-2xl bg-surface ring-1 ring-stone-200">
+              <table className="tabular w-full text-sm">
+                <thead className="bg-stone-50 text-xs uppercase text-stone-500">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold">Dvojice</th>
+                    <th className="px-3 py-2 text-right font-semibold">Večerů</th>
+                    <th className="px-3 py-2 text-right font-semibold">Výhry : prohry</th>
+                    <th className="px-3 py-2 text-right font-semibold">Stejně</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.h2h.map((h) => {
+                    // In player mode, the selected player is always on the left.
+                    const flip = mode === 'player' && h.b === playerIds[0]
+                    const [a, b, aw, bw] = flip ? [h.b, h.a, h.bBetter, h.aBetter] : [h.a, h.b, h.aBetter, h.bBetter]
+                    return (
+                      <tr key={`${h.a}-${h.b}`} className="border-t border-stone-100">
+                        <td className="px-3 py-1.5">
+                          <strong>{name(a)}</strong> vs {name(b)}
+                        </td>
+                        <td className="px-3 py-1.5 text-right">{h.games}</td>
+                        <td className="px-3 py-1.5 text-right font-semibold">
+                          {aw} : {bw}
+                        </td>
+                        <td className="px-3 py-1.5 text-right">{h.equal}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1 text-xs text-stone-500">Porovnání součtů ve společných večerech (jen dohraná kola).</p>
+          </section>
       )}
     </div>
   )
@@ -501,10 +515,15 @@ interface ProgressProps {
   theme: ChartTheme
 }
 
-/** Cumulative points per round over the whole game, with a soft wash under each line. */
+const NO_THROWS_TONIGHT = 'Dnes zatím žádné hody'
+
+/** Cumulative points per round (tonight or the whole game), with a soft wash under each line. */
 function ProgressChart({ stats, playerIds, name, theme, legend }: ProgressProps & { legend: { name: string; color: string }[] }) {
   const gradientId = useId()
-  const lastIndex = stats.progress.length - 1
+  const [scope, setScope] = useState<'evening' | 'all'>('evening')
+  const evening = scope === 'evening'
+  const rows: ProgressRow[] = evening ? stats.tonight : stats.progress
+  const lastIndex = rows.length - 1
   const leader = (row: Record<string, unknown>) => {
     const sorted = playerIds
       .map((id) => ({ id, total: row[id] as number }))
@@ -519,74 +538,98 @@ function ProgressChart({ stats, playerIds, name, theme, legend }: ProgressProps 
       title="Průběh skóre"
       subtitle="Body celkem po jednotlivých kolech"
       legend={legend}
-      height="h-64 sm:h-80"
-      className="lg:col-span-2"
-    >
-      <ResponsiveContainer>
-        <AreaChart data={stats.progress} margin={{ top: 8, right: 12, bottom: 0, left: -6 }}>
-          <defs>
-            {playerIds.map((id, i) => (
-              <linearGradient key={id} id={`${gradientId}-${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={theme.series(i)} stopOpacity={0.16} />
-                <stop offset="100%" stopColor={theme.series(i)} stopOpacity={0} />
-              </linearGradient>
-            ))}
-          </defs>
-          <CartesianGrid {...gridProps(theme)} />
-          <XAxis dataKey="round" {...axisProps(theme)} minTickGap={28} />
-          <YAxis {...axisProps(theme)} tickFormatter={formatCompact} width={52} />
-          <Tooltip
-            cursor={{ stroke: theme.reference, strokeWidth: 1 }}
-            content={(p) => (
-              <ChartTooltip
-                {...p}
-                formatLabel={(l, row) => `Kolo ${l}${row?.date ? ` · ${formatDate(row.date as string)}` : ''}`}
-                formatValue={num}
-                footer={leader}
-              />
-            )}
-          />
-          {playerIds.map((id, i) => (
-            <Area
-              key={id}
-              type="monotone"
-              dataKey={id}
-              name={name(id)}
-              stroke={theme.series(i)}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill={`url(#${gradientId}-${i})`}
-              // End marker on the latest round only.
-              dot={(props: { cx?: number; cy?: number; index?: number }) =>
-                props.index === lastIndex && props.cx !== undefined && props.cy !== undefined ? (
-                  <circle
-                    key={`end-${id}`}
-                    cx={props.cx}
-                    cy={props.cy}
-                    r={4.5}
-                    fill={theme.series(i)}
-                    stroke={theme.surface}
-                    strokeWidth={2}
-                  />
-                ) : (
-                  <g key={`dot-${id}-${props.index}`} />
-                )
-              }
-              activeDot={{ r: 4.5, strokeWidth: 2, stroke: theme.surface }}
-            />
+      height="h-64 sm:h-72"
+      actions={
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-0.5 text-sm" role="tablist">
+          {(
+            [
+              ['evening', 'Dnešní večer'],
+              ['all', 'Celkem'],
+            ] as const
+          ).map(([value, text]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={scope === value}
+              onClick={() => setScope(value)}
+              className={`rounded-md px-3 py-1 font-semibold ${scope === value ? 'bg-surface shadow-sm' : 'text-stone-500'}`}
+            >
+              {text}
+            </button>
           ))}
-        </AreaChart>
-      </ResponsiveContainer>
+        </div>
+      }
+    >
+      {rows.length === 0 ? (
+        <EmptyState>{NO_THROWS_TONIGHT}</EmptyState>
+      ) : (
+        <ResponsiveContainer>
+          <AreaChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: -6 }}>
+            <defs>
+              {playerIds.map((id, i) => (
+                <linearGradient key={id} id={`${gradientId}-${i}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={theme.series(i)} stopOpacity={0.16} />
+                  <stop offset="100%" stopColor={theme.series(i)} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid {...gridProps(theme)} />
+            <XAxis dataKey="round" {...axisProps(theme)} minTickGap={28} />
+            <YAxis {...axisProps(theme)} tickFormatter={formatCompact} width={52} />
+            <Tooltip
+              cursor={{ stroke: theme.reference, strokeWidth: 1 }}
+              content={(p) => (
+                <ChartTooltip
+                  {...p}
+                  formatLabel={(l, row) => `Kolo ${l}${!evening && row?.date ? ` · ${formatDate(row.date as string)}` : ''}`}
+                  formatValue={num}
+                  footer={leader}
+                />
+              )}
+            />
+            {playerIds.map((id, i) => (
+              <Area
+                key={id}
+                type="monotone"
+                dataKey={id}
+                name={name(id)}
+                stroke={theme.series(i)}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill={`url(#${gradientId}-${i})`}
+                // End marker on the latest round only.
+                dot={(props: { cx?: number; cy?: number; index?: number }) =>
+                  props.index === lastIndex && props.cx !== undefined && props.cy !== undefined ? (
+                    <circle
+                      key={`end-${id}`}
+                      cx={props.cx}
+                      cy={props.cy}
+                      r={4.5}
+                      fill={theme.series(i)}
+                      stroke={theme.surface}
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <g key={`dot-${id}-${props.index}`} />
+                  )
+                }
+                activeDot={{ r: 4.5, strokeWidth: 2, stroke: theme.surface }}
+              />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
     </ChartCard>
   )
 }
 
-/** Two players: the lead over the rounds; above zero the first player leads, below the second. */
+/** Two players: the lead over tonight's rounds; above zero the first player leads, below the second. */
 function LeadChart({ stats, playerIds, name, theme }: ProgressProps) {
   const gradientId = useId()
   const [a, b] = playerIds
-  const leads = stats.progress.map((r) => r.lead as number)
+  const leads = stats.tonight.map((r) => r.lead as number)
   const max = Math.max(0, ...leads)
   const min = Math.min(0, ...leads)
   // Where zero sits in the gradient (0 = top, 1 = bottom).
@@ -595,56 +638,60 @@ function LeadChart({ stats, playerIds, name, theme }: ProgressProps) {
   return (
     <ChartCard
       title="Náskok"
-      subtitle={`Nahoře vede ${name(a)}, dole ${name(b)}`}
+      subtitle={`Dnešní večer · nahoře vede ${name(a)}, dole ${name(b)}`}
       legend={[
         { name: name(a), color: theme.series(0) },
         { name: name(b), color: theme.series(1) },
       ]}
     >
-      <ResponsiveContainer>
-        <AreaChart data={stats.progress} margin={{ top: 6, right: 6, bottom: 0, left: -10 }}>
-          <defs>
-            <linearGradient id={`${gradientId}-stroke`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset={zero} stopColor={theme.series(0)} />
-              <stop offset={zero} stopColor={theme.series(1)} />
-            </linearGradient>
-            <linearGradient id={`${gradientId}-fill`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset={0} stopColor={theme.series(0)} stopOpacity={0.22} />
-              <stop offset={zero} stopColor={theme.series(0)} stopOpacity={0.04} />
-              <stop offset={zero} stopColor={theme.series(1)} stopOpacity={0.04} />
-              <stop offset={1} stopColor={theme.series(1)} stopOpacity={0.22} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid {...gridProps(theme)} />
-          <XAxis dataKey="round" {...axisProps(theme)} minTickGap={24} />
-          <YAxis {...axisProps(theme)} tickFormatter={(v: number) => formatCompact(Math.abs(v))} width={44} />
-          <ReferenceLine y={0} stroke={theme.reference} strokeWidth={1} />
-          <Tooltip
-            cursor={{ stroke: theme.reference, strokeWidth: 1 }}
-            content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null
-              const lead = payload[0].value as number
-              return (
-                <div className="rounded-xl bg-surface px-3 py-2 text-sm shadow-lg ring-1 ring-stone-200">
-                  <div className="mb-0.5 text-xs font-semibold text-stone-500">Kolo {label}</div>
-                  <div className="tabular font-bold text-stone-900">
-                    {lead === 0 ? 'Remíza' : `Vede ${name(lead > 0 ? a : b)} o ${formatNumber(Math.abs(lead))}`}
+      {stats.tonight.length === 0 ? (
+        <EmptyState>{NO_THROWS_TONIGHT}</EmptyState>
+      ) : (
+        <ResponsiveContainer>
+          <AreaChart data={stats.tonight} margin={{ top: 6, right: 6, bottom: 0, left: -10 }}>
+            <defs>
+              <linearGradient id={`${gradientId}-stroke`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset={zero} stopColor={theme.series(0)} />
+                <stop offset={zero} stopColor={theme.series(1)} />
+              </linearGradient>
+              <linearGradient id={`${gradientId}-fill`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset={0} stopColor={theme.series(0)} stopOpacity={0.22} />
+                <stop offset={zero} stopColor={theme.series(0)} stopOpacity={0.04} />
+                <stop offset={zero} stopColor={theme.series(1)} stopOpacity={0.04} />
+                <stop offset={1} stopColor={theme.series(1)} stopOpacity={0.22} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...gridProps(theme)} />
+            <XAxis dataKey="round" {...axisProps(theme)} minTickGap={24} />
+            <YAxis {...axisProps(theme)} tickFormatter={(v: number) => formatCompact(Math.abs(v))} width={44} />
+            <ReferenceLine y={0} stroke={theme.reference} strokeWidth={1} />
+            <Tooltip
+              cursor={{ stroke: theme.reference, strokeWidth: 1 }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null
+                const lead = payload[0].value as number
+                return (
+                  <div className="rounded-xl bg-surface px-3 py-2 text-sm shadow-lg ring-1 ring-stone-200">
+                    <div className="mb-0.5 text-xs font-semibold text-stone-500">Kolo {label}</div>
+                    <div className="tabular font-bold text-stone-900">
+                      {lead === 0 ? 'Remíza' : `Vede ${name(lead > 0 ? a : b)} o ${formatNumber(Math.abs(lead))}`}
+                    </div>
                   </div>
-                </div>
-              )
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="lead"
-            stroke={`url(#${gradientId}-stroke)`}
-            strokeWidth={2}
-            fill={`url(#${gradientId}-fill)`}
-            baseValue={0}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: theme.surface }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+                )
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="lead"
+              stroke={`url(#${gradientId}-stroke)`}
+              strokeWidth={2}
+              fill={`url(#${gradientId}-fill)`}
+              baseValue={0}
+              activeDot={{ r: 4, strokeWidth: 2, stroke: theme.surface }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
     </ChartCard>
   )
 }
