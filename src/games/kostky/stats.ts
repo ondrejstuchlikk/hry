@@ -3,19 +3,23 @@ import type { StatsData } from '../../lib/api'
 import type { ScoredEntry, SessionWithPlayers } from '../../lib/types'
 import { formatNumber } from '../../lib/format'
 import { isBetter } from '../winners'
-import { completeRoundNos, sessionTotals } from './logic'
+import { completeRoundNos, DEFAULT_MIN_VALUE, sessionTotals } from './logic'
 
 // ---------------------------------------------------------------------------
 // Histogram
 // ---------------------------------------------------------------------------
 
-/** Upper bucket edges (inclusive). Buckets: 0, 1–100, 101–300, …, 2 001–5 000, > 5 000. */
-export const HISTOGRAM_EDGES = [0, 100, 300, 500, 1000, 2000, 5000] as const
+/**
+ * Upper bucket edges (inclusive). Buckets: 0, 250–300, 301–500, …, 2 001–5 000, > 5 000.
+ * Throws 1–249 are not allowed; old ones still land in the first non-zero bucket.
+ */
+export const HISTOGRAM_EDGES = [0, 300, 500, 1000, 2000, 5000] as const
 
 export function histogramLabels(): string[] {
   const labels = ['0']
   for (let i = 1; i < HISTOGRAM_EDGES.length; i++) {
-    labels.push(`${formatNumber(HISTOGRAM_EDGES[i - 1] + 1)}–${formatNumber(HISTOGRAM_EDGES[i])}`)
+    const from = i === 1 ? DEFAULT_MIN_VALUE : HISTOGRAM_EDGES[i - 1] + 1
+    labels.push(`${formatNumber(from)}–${formatNumber(HISTOGRAM_EDGES[i])}`)
   }
   labels.push(`> ${formatNumber(HISTOGRAM_EDGES[HISTOGRAM_EDGES.length - 1])}`)
   return labels

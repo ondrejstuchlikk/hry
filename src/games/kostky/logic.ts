@@ -1,6 +1,7 @@
 // Kostky rules: every player throws once per round, in the order of the draw that
 // applies to that round (redrawn each day). Only complete rounds count toward the
 // winner; higher total wins.
+import { formatNumber } from '../../lib/format'
 import type { Draw, ScoredEntry } from '../../lib/types'
 import { pickWinners } from '../winners'
 
@@ -101,6 +102,23 @@ export function liveStats(order: string[], entries: TurnEntry[]): Map<string, Li
   }
   for (const s of result.values()) s.average = s.throws ? s.total / s.throws : null
   return result
+}
+
+/** Fallbacks for game_types.config: a throw is 0 or a multiple of 50 from 250 up. */
+export const DEFAULT_MIN_VALUE = 250
+export const DEFAULT_VALUE_STEP = 50
+
+/** Why a parsed throw cannot be recorded, or null when it can. */
+export function throwError(value: number, minValue = DEFAULT_MIN_VALUE, step = DEFAULT_VALUE_STEP): string | null {
+  if (value === 0) return null
+  if (value < minValue) {
+    return `Hod 1–${formatNumber(minValue - 1)} nejde zapsat. Nejmenší bodovaný hod je ${formatNumber(minValue)}, jinak zapiš 0.`
+  }
+  if (value % step !== 0) {
+    const lower = value - (value % step)
+    return `${formatNumber(value)} není násobek ${formatNumber(step)}. Nemělo být ${formatNumber(lower)}, nebo ${formatNumber(lower + step)}?`
+  }
+  return null
 }
 
 /** Parses the input: a non-negative integer, or null for anything else (incl. empty). */

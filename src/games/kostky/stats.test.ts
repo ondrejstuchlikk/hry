@@ -40,15 +40,15 @@ function entry(session_id: string, player_id: string, round_no: number, value: n
 describe('histogram', () => {
   it('buckets values by inclusive upper edges', () => {
     expect(bucketIndex(0)).toBe(0)
-    expect(bucketIndex(1)).toBe(1)
-    expect(bucketIndex(100)).toBe(1)
-    expect(bucketIndex(101)).toBe(2)
+    expect(bucketIndex(250)).toBe(1)
+    expect(bucketIndex(300)).toBe(1)
+    expect(bucketIndex(301)).toBe(2)
     expect(bucketIndex(5000)).toBe(HISTOGRAM_EDGES.length - 1)
     expect(bucketIndex(5001)).toBe(HISTOGRAM_EDGES.length)
   })
 
   it('counts values and has one label per bucket', () => {
-    const counts = histogram([0, 0, 50, 250, 10000])
+    const counts = histogram([0, 0, 250, 350, 10000])
     expect(counts).toHaveLength(HISTOGRAM_EDGES.length + 1)
     expect(counts[0]).toBe(2)
     expect(counts[1]).toBe(1)
@@ -56,6 +56,7 @@ describe('histogram', () => {
     expect(counts[counts.length - 1]).toBe(1)
     expect(histogramLabels()).toHaveLength(counts.length)
     expect(histogramLabels()[0]).toBe('0')
+    expect(histogramLabels()[1]).toBe('250–300')
   })
 })
 

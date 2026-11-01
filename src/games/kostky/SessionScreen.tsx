@@ -22,11 +22,14 @@ import type { SessionScreenProps } from '../types'
 import { currentEvening } from './evenings'
 import {
   completeRoundNos,
+  DEFAULT_MIN_VALUE,
+  DEFAULT_VALUE_STEP,
   liveStats,
   nextTurn,
   orderForRound,
   parseThrow,
   sessionTotals,
+  throwError,
   type DrawOrder,
 } from './logic'
 import { Scoreboard } from './Scoreboard'
@@ -36,13 +39,15 @@ const KostkyProgress = lazy(() => import('./StatsView').then((m) => ({ default: 
 const KostkySummary = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkySummary })))
 const KostkyCharts = lazy(() => import('./StatsView').then((m) => ({ default: m.KostkyCharts })))
 
-const DEFAULT_MAX_WARNING = 10000
+const DEFAULT_MAX_WARNING = 2000
 const TEMP_ID = 'pending'
 
 export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionScreenProps) {
   const sessionId = detail.session.id
   const players = detail.players
   const maxWarning = detail.gameType.config.max_warning ?? DEFAULT_MAX_WARNING
+  const minValue = detail.gameType.config.min_value ?? DEFAULT_MIN_VALUE
+  const valueStep = detail.gameType.config.value_step ?? DEFAULT_VALUE_STEP
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const [entries, setEntries] = useState<ScoredEntry[]>(detail.entries)
@@ -144,6 +149,12 @@ export function KostkySessionScreen({ detail, showDraw, onDrawShown }: SessionSc
     const value = parseThrow(input)
     if (value === null) {
       setError('Zadej celé číslo 0 nebo větší')
+      focusInput(true)
+      return
+    }
+    const invalid = throwError(value, minValue, valueStep)
+    if (invalid) {
+      setError(invalid)
       focusInput(true)
       return
     }

@@ -2,6 +2,10 @@ export type Scoring = 'higher_better' | 'lower_better'
 
 export interface GameConfig {
   max_warning?: number
+  /** Kostky: smallest non-zero value. */
+  min_value?: number
+  /** Kostky: non-zero values must be multiples of this. */
+  value_step?: number
   round_complete?: 'all_players' | 'round_winner'
   /** Žolík: most jokers the hand winner may keep. */
   max_jokers?: number

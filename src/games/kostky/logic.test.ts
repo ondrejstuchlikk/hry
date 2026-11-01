@@ -9,6 +9,7 @@ import {
   orderForRound,
   parseThrow,
   sessionTotals,
+  throwError,
   type TurnEntry,
 } from './logic'
 
@@ -102,6 +103,25 @@ describe('liveStats', () => {
     const stats = liveStats(order, [e('a', 1, 0), e('b', 1, 50), e('c', 1, 100), e('a', 2, 300)])
     expect(stats.get('a')).toEqual({ total: 300, throws: 2, average: 150, zeros: 1, best: 300 })
     expect(stats.get('b')?.zeros).toBe(0)
+  })
+})
+
+describe('throwError', () => {
+  it('allows 0 and multiples of 50 from 250 up', () => {
+    expect(throwError(0)).toBeNull()
+    expect(throwError(250)).toBeNull()
+    expect(throwError(300)).toBeNull()
+    expect(throwError(15000)).toBeNull()
+  })
+
+  it('rejects 1–249', () => {
+    expect(throwError(1)).toContain('1–249')
+    expect(throwError(200)).toContain('1–249')
+    expect(throwError(249)).toContain('1–249')
+  })
+
+  it('rejects other values and suggests the nearest multiples', () => {
+    expect(throwError(263)).toBe('263 není násobek 50. Nemělo být 250, nebo 300?')
   })
 })
 

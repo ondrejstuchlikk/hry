@@ -72,7 +72,7 @@ game_types (
   id text primary key,                 -- 'kostky', 'zolik'
   name text not null,                  -- 'Kostky', 'Žolík' (Czech display name)
   scoring text not null check (scoring in ('higher_better','lower_better')),
-  config jsonb not null default '{}'   -- e.g. {"max_warning": 10000}
+  config jsonb not null default '{}'   -- e.g. {"max_warning": 2000}
 )
 
 sessions (
@@ -169,7 +169,8 @@ Top nav: „Hry“, „Celkové statistiky“, username + „Odhlásit“. (The 
    - One large numeric input, **autofocused at all times**. On mobile use `inputMode="numeric"`, `pattern="[0-9]*"`.
    - **Enter** (or a large „Zapsat“ button) saves the entry and immediately moves to the next player in turn order; the input is cleared and focused again. No other clicks needed.
    - Validation: integer ≥ 0. **0 is valid and common** — make sure an empty input is not treated as 0; empty input + Enter does nothing.
-   - If value > 10 000: confirmation dialog „Opravdu <hodnota>? To je víc než 10 000.“ with buttons „Ano“ (save) and „Opravit“ (back to input with value selected). Enter in the dialog = „Ano“, Esc = „Opravit“. Threshold comes from `game_types.config.max_warning`.
+   - Allowed values: 0, or a multiple of 50 that is ≥ 250 (`game_types.config.min_value` / `value_step`; also checked in `add_entry`). Other values are refused with an explanation below the input.
+   - If value > 2 000: confirmation dialog „Opravdu <hodnota>? To je víc než 2 000.“ with buttons „Ano“ (save) and „Opravit“ (back to input with value selected). Enter in the dialog = „Ano“, Esc = „Opravit“. Threshold comes from `game_types.config.max_warning`.
    - Button „Zpět“ (and keyboard shortcut Ctrl+Z when input is empty): deletes the last entry (highest `seq`) and returns the turn to that player.
    - Small live stats next to the input (desktop) / below it (mobile): totals and average for the whole game, plus total, average and zeros of the evening in progress („Dnešní večer“).
    - Below: the group statistics (summary cards + all charts, see Statistics), updated live after every throw.
@@ -194,7 +195,7 @@ All stats are computed over **all evenings** in the selected scope (the game's g
 **Charts:**
 - Wins over time — cumulative wins per player (line chart, x = evening date)
 - Average per throw per evening over time (line, one line per player, optional moving average)
-- Distribution of throw values — histogram with sensible buckets (0, 1–100, 101–300, …, >5000; make bucket edges a constant)
+- Distribution of throw values — histogram with sensible buckets (0, 250–300, 301–500, …, >5000; make bucket edges a constant)
 - Total per evening — bar chart, players side by side
 - Starting player advantage — win rate of the player who started vs. others
 - Streaks: „Nejdelší série nul“, „Nejdelší série vítězství“
@@ -242,6 +243,6 @@ README.md                  # setup steps (in Czech or English, keep it short)
 ## Working rules for the agent
 
 - Build iteratively: (1) schema + RLS + auth, (2) game list + new session + draw, (3) Kostky session screen, (4) ending sessions + winners + inactivity, (5) group statistics, (6) overall statistics, (7) PWA + deploy. Commit after each step.
-- Test the session screen keyboard flow carefully (Enter → next player, 0 values, >10 000 dialog, „Zpět“).
+- Test the session screen keyboard flow carefully (Enter → next player, 0 values, 1–249 refused, >2 000 dialog, „Zpět“).
 - Write unit tests (Vitest) for pure logic: turn order, winner computation incl. incomplete rounds and ties, histogram bucketing, streaks.
 - Ask the user before making product decisions not covered here.
